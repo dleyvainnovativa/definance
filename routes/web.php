@@ -14,6 +14,7 @@ Route::middleware('auth')->group(function () {
 
     Route::view('/accounts', 'pages.accounts')->name('accounts');
     Route::view('/entries', 'pages.entries')->name('entries');
+    Route::view('/import', 'pages.import')->name('import');
 
     Route::view('/trial-balance', 'pages.reports.trial-balance')->name('trial-balance');
     Route::view('/income-statement', 'pages.reports.income-statement')->name('income-statement');

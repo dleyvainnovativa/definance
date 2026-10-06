@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\JournalEntryController;
+use App\Http\Controllers\Api\JournalEntryImportController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\TaxController;
@@ -20,6 +21,9 @@ Route::middleware('firebase.jwt')->group(function () {
     // Journal entries.
     Route::get('/entries', [JournalEntryController::class, 'index'])->name('entries.index');
     Route::post('/entries', [JournalEntryController::class, 'store'])->name('entries.store');
+    // Bulk import — defined before the {entry} routes so the static path wins.
+    Route::post('/entries/import/preview', [JournalEntryImportController::class, 'preview'])->name('entries.import.preview');
+    Route::post('/entries/import', [JournalEntryImportController::class, 'store'])->name('entries.import');
     Route::get('/entries/{entry}', [JournalEntryController::class, 'show'])->name('entries.show');
     Route::post('/entries/{entry}/void', [JournalEntryController::class, 'void'])->name('entries.void');
 

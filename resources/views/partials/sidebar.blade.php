@@ -6,6 +6,7 @@
         ['section' => 'Contabilidad', 'items' => [
             ['route' => 'accounts', 'label' => 'Catálogo de cuentas', 'icon' => 'list'],
             ['route' => 'entries', 'label' => 'Pólizas', 'icon' => 'book'],
+            ['route' => 'import', 'label' => 'Importar pólizas', 'icon' => 'upload'],
         ]],
         ['section' => 'Reportes', 'items' => [
             ['route' => 'trial-balance', 'label' => 'Balanza de comprobación', 'icon' => 'scale'],
@@ -23,6 +24,7 @@
         'grid' => '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
         'list' => '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/>',
         'book' => '<path d="M4 4h12a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2V4z"/><line x1="8" y1="8" x2="14" y2="8"/>',
+        'upload' => '<path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><polyline points="8 8 12 4 16 8"/><line x1="12" y1="4" x2="12" y2="16"/>',
         'scale' => '<line x1="12" y1="3" x2="12" y2="21"/><path d="M5 7h14"/><path d="M5 7l-2.5 6a3 3 0 0 0 5 0L5 7z"/><path d="M19 7l-2.5 6a3 3 0 0 0 5 0L19 7z"/>',
         'trend' => '<polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/>',
         'layers' => '<polygon points="12 3 21 8 12 13 3 8 12 3"/><polyline points="3 13 12 18 21 13"/>',
