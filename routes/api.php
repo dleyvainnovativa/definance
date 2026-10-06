@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\JournalEntryController;
 use App\Http\Controllers\Api\JournalEntryImportController;
@@ -41,6 +42,10 @@ Route::middleware('firebase.jwt')->group(function () {
     // FEA — managed / adjusted cash flow.
     Route::get('/managed-cash-flow', [ManagedCashFlowController::class, 'show'])->name('managed-cash-flow.show');
     Route::post('/managed-cash-flow', [ManagedCashFlowController::class, 'store'])->name('managed-cash-flow.store');
+
+    // Presupuesto (budget) — annual.
+    Route::get('/budgets', [BudgetController::class, 'index'])->name('budgets.index');
+    Route::post('/budgets', [BudgetController::class, 'store'])->name('budgets.store');
 
     // Profile.
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
