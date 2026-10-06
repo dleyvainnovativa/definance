@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\JournalEntryController;
 use App\Http\Controllers\Api\JournalEntryImportController;
+use App\Http\Controllers\Api\ManagedCashFlowController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\TaxController;
@@ -36,6 +37,10 @@ Route::middleware('firebase.jwt')->group(function () {
     Route::get('/reports/balance-sheet', [ReportController::class, 'balanceSheet'])->name('reports.balance-sheet');
     Route::get('/reports/cash-flow', [ReportController::class, 'cashFlow'])->name('reports.cash-flow');
     Route::get('/reports/iva', [TaxController::class, 'iva'])->name('reports.iva');
+
+    // FEA — managed / adjusted cash flow.
+    Route::get('/managed-cash-flow', [ManagedCashFlowController::class, 'show'])->name('managed-cash-flow.show');
+    Route::post('/managed-cash-flow', [ManagedCashFlowController::class, 'store'])->name('managed-cash-flow.store');
 
     // Profile.
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');

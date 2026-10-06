@@ -13,6 +13,7 @@
             ['route' => 'income-statement', 'label' => 'Estado de resultados', 'icon' => 'trend'],
             ['route' => 'balance-sheet', 'label' => 'Balance general', 'icon' => 'layers'],
             ['route' => 'cash-flow', 'label' => 'Flujo de efectivo', 'icon' => 'cash'],
+            ['route' => 'managed-cash-flow', 'label' => 'Flujo ajustado', 'icon' => 'sliders'],
             ['route' => 'iva', 'label' => 'Declaración de IVA', 'icon' => 'percent'],
         ]],
         ['section' => 'Cuenta', 'items' => [
@@ -29,6 +30,7 @@
         'trend' => '<polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/>',
         'layers' => '<polygon points="12 3 21 8 12 13 3 8 12 3"/><polyline points="3 13 12 18 21 13"/>',
         'cash' => '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>',
+        'sliders' => '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
         'percent' => '<line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
         'user' => '<circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>',
     ];
