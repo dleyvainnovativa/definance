@@ -7,6 +7,7 @@ import { initializeApp } from 'firebase/app';
 import {
     getAuth,
     onAuthStateChanged,
+    sendPasswordResetEmail,
     signInWithEmailAndPassword,
     signOut as fbSignOut,
 } from 'firebase/auth';
@@ -40,4 +41,9 @@ export function signIn(email, password) {
 
 export function signOut() {
     return fbSignOut(auth);
+}
+
+/** Send a Firebase password-reset email (password reset stays client-side). */
+export function sendPasswordReset(email) {
+    return sendPasswordResetEmail(auth, email);
 }

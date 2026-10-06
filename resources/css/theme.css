@@ -215,7 +215,7 @@ a { color: var(--c-primary); text-decoration: none; }
 }
 .topbar .title { font-size: 1.02rem; font-weight: 600; }
 .topbar-actions { display: flex; align-items: center; gap: .6rem; }
-.content { padding: 1.6rem; max-width: 1200px; width: 100%; }
+.content { padding: 1.6rem; width: 100%; }
 
 .icon-btn {
     width: 38px; height: 38px; border-radius: var(--radius);

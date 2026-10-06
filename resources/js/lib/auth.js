@@ -3,7 +3,7 @@
  | signInWithSession(): signs in with Firebase, then POSTs the ID token to
  | /auth/session so Blade pages get a normal Laravel session.
  */
-import { signIn, signOut, getIdToken } from '../firebase/firebase.js';
+import { signIn, signOut, getIdToken, sendPasswordReset } from '../firebase/firebase.js';
 
 function csrfToken() {
     return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
@@ -41,4 +41,9 @@ export async function logout() {
     }
 }
 
-export const auth = { signInWithSession, logout };
+/** Trigger a Firebase password-reset email for the given address. */
+export async function resetPassword(email) {
+    return sendPasswordReset(email);
+}
+
+export const auth = { signInWithSession, logout, resetPassword };

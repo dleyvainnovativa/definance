@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\WelcomeMail;
 use App\Models\LoginDevice;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Kreait\Firebase\Contract\Auth as FirebaseAuth;
 
 /**
@@ -33,6 +35,7 @@ class AuthController extends Controller
         $uid = $claims->get('sub');
 
         $user = User::firstOrNew(['firebase_uid' => $uid]);
+        $isNewUser = ! $user->exists;
         // Keep profile fields fresh from the identity provider.
         $user->email = $claims->get('email') ?? $user->email;
         $user->name = $claims->get('name') ?? $user->name;
@@ -47,6 +50,11 @@ class AuthController extends Controller
             'user_agent' => (string) $request->userAgent(),
             'last_login_at' => now(),
         ]);
+
+        // Welcome email on first sign-in only (queued — never blocks login).
+        if ($isNewUser && $user->email) {
+            Mail::to($user->email)->queue(new WelcomeMail($user));
+        }
 
         return response()->json(['ok' => true]);
     }
