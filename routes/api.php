@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\BudgetController;
+use App\Http\Controllers\Api\CashCountController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\JournalEntryController;
 use App\Http\Controllers\Api\JournalEntryImportController;
@@ -26,6 +27,12 @@ Route::middleware('firebase.jwt')->group(function () {
     // Bulk import — defined before the {entry} routes so the static path wins.
     Route::post('/entries/import/preview', [JournalEntryImportController::class, 'preview'])->name('entries.import.preview');
     Route::post('/entries/import', [JournalEntryImportController::class, 'store'])->name('entries.import');
+
+    // Arqueo de caja (cash count).
+    Route::get('/cash-count/settings', [CashCountController::class, 'settings'])->name('cash-count.settings');
+    Route::put('/cash-count/settings', [CashCountController::class, 'saveSettings'])->name('cash-count.settings.save');
+    Route::get('/cash-count', [CashCountController::class, 'index'])->name('cash-count.index');
+    Route::post('/cash-count', [CashCountController::class, 'store'])->name('cash-count.store');
     Route::get('/entries/{entry}', [JournalEntryController::class, 'show'])->name('entries.show');
     Route::post('/entries/{entry}/void', [JournalEntryController::class, 'void'])->name('entries.void');
 
