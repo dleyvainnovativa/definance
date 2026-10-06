@@ -45,6 +45,13 @@ class ReportController extends Controller
         return response()->json($this->ledger->cashFlow($request->user()->id, $from, $to));
     }
 
+    public function averages(Request $request): JsonResponse
+    {
+        ['from' => $from, 'to' => $to] = $this->period($request);
+
+        return response()->json($this->ledger->averages($request->user()->id, $from, $to));
+    }
+
     /** @return array{from:string,to:string} */
     private function period(Request $request): array
     {

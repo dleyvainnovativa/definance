@@ -18,6 +18,7 @@
             ['route' => 'budget', 'label' => 'Presupuesto', 'icon' => 'target'],
             ['route' => 'budget-monthly', 'label' => 'Presupuesto mensual', 'icon' => 'calendar'],
             ['route' => 'iva', 'label' => 'Declaración de IVA', 'icon' => 'percent'],
+            ['route' => 'averages', 'label' => 'Promedios', 'icon' => 'average'],
         ]],
         ['section' => 'Cuenta', 'items' => [
             ['route' => 'profile', 'label' => 'Perfil', 'icon' => 'user'],
@@ -38,6 +39,7 @@
         'target' => '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
         'calendar' => '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/>',
         'percent' => '<line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
+        'average' => '<line x1="4" y1="7" x2="15" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="10" y2="17"/>',
         'user' => '<circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>',
     ];
 @endphp

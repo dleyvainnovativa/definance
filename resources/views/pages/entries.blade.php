@@ -124,7 +124,10 @@
                     <td class="code">${e.reference ?? ''}</td>
                     <td><span class="status ${e.status}">${STATUS[e.status] ?? e.status}</span></td>
                     <td class="amount num">${format.money(e.totals?.debit ?? 0)}</td>
-                    <td class="amount">${e.status === 'posted' ? `<button class="btn-icon danger" data-void="${e.id}" title="Cancelar póliza">⊘</button>` : ''}</td>
+                    <td class="amount"><span class="row-actions">
+                        <a class="btn-icon" href="/voucher?id=${e.id}" title="Ver comprobante">🧾</a>
+                        ${e.status === 'posted' ? `<button class="btn-icon danger" data-void="${e.id}" title="Cancelar póliza">⊘</button>` : ''}
+                    </span></td>
                 </tr>`).join('');
             body.querySelectorAll('[data-void]').forEach(b => b.addEventListener('click', () => voidEntry(b.dataset.void)));
         }

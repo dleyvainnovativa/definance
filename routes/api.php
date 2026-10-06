@@ -44,6 +44,7 @@ Route::middleware('firebase.jwt')->group(function () {
     Route::get('/reports/income-statement', [ReportController::class, 'incomeStatement'])->name('reports.income-statement');
     Route::get('/reports/balance-sheet', [ReportController::class, 'balanceSheet'])->name('reports.balance-sheet');
     Route::get('/reports/cash-flow', [ReportController::class, 'cashFlow'])->name('reports.cash-flow');
+    Route::get('/reports/averages', [ReportController::class, 'averages'])->name('reports.averages');
     Route::get('/reports/iva', [TaxController::class, 'iva'])->name('reports.iva');
 
     // FEA — managed / adjusted cash flow.

@@ -256,7 +256,54 @@ class LedgerService
         ];
     }
 
+    /**
+     * Averages (Promedios): income-statement figures per account divided by the
+     * number of calendar months in the range (inclusive). Read-only.
+     *
+     * @return array<string,mixed>
+     */
+    public function averages(int $userId, string $from, string $to): array
+    {
+        $months = $this->monthsBetween($from, $to);
+        $divisor = (string) $months;
+        $statement = $this->incomeStatement($userId, $from, $to);
+
+        $toAvg = fn (array $rows): array => array_map(fn (array $r) => [
+            'account_id' => $r['account_id'],
+            'code' => $r['code'],
+            'name' => $r['name'],
+            'total' => $r['amount'],
+            'average' => bcdiv($r['amount'], $divisor, Money::SCALE),
+        ], $rows);
+
+        $revTotal = $statement['totals']['revenue'];
+        $expTotal = $statement['totals']['expenses'];
+        $net = $statement['totals']['net_income'];
+
+        return [
+            'from' => $from,
+            'to' => $to,
+            'months' => $months,
+            'revenue' => $toAvg($statement['revenue']),
+            'expenses' => $toAvg($statement['expenses']),
+            'totals' => [
+                'revenue' => ['total' => $revTotal, 'average' => bcdiv($revTotal, $divisor, Money::SCALE)],
+                'expenses' => ['total' => $expTotal, 'average' => bcdiv($expTotal, $divisor, Money::SCALE)],
+                'net' => ['total' => $net, 'average' => bcdiv($net, $divisor, Money::SCALE)],
+            ],
+        ];
+    }
+
     // ----------------------------------------------------------------- helpers
+
+    /** Whole calendar months spanned by [from, to], inclusive (min 1). */
+    private function monthsBetween(string $from, string $to): int
+    {
+        $a = Carbon::parse($from);
+        $b = Carbon::parse($to);
+
+        return max(1, ($b->year - $a->year) * 12 + ($b->month - $a->month) + 1);
+    }
 
     /** @return \Illuminate\Support\Collection<int,ChartOfAccount> */
     private function accounts(int $userId): \Illuminate\Support\Collection

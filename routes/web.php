@@ -25,6 +25,8 @@ Route::middleware('auth')->group(function () {
     Route::view('/budget', 'pages.budget')->name('budget');
     Route::view('/budget-monthly', 'pages.budget-monthly')->name('budget-monthly');
     Route::view('/iva', 'pages.reports.iva')->name('iva');
+    Route::view('/averages', 'pages.reports.average')->name('averages');
+    Route::view('/voucher', 'pages.voucher')->name('voucher');
 
     Route::view('/profile', 'pages.profile')->name('profile');
 });
