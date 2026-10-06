@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SaveBudgetMonthlyRequest;
 use App\Http\Requests\SaveBudgetRequest;
 use App\Services\Budget\BudgetService;
 use Illuminate\Http\JsonResponse;
@@ -36,6 +37,26 @@ class BudgetController extends Controller
 
         return response()->json(
             $this->budgets->saveAnnual($request->user()->id, (int) $data['year'], $data['rows']),
+        );
+    }
+
+    public function monthly(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'year' => ['nullable', 'integer', 'min:2000', 'max:2100'],
+        ]);
+
+        $year = $data['year'] ?? (int) Carbon::now()->format('Y');
+
+        return response()->json($this->budgets->monthly($request->user()->id, $year));
+    }
+
+    public function storeMonthly(SaveBudgetMonthlyRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+
+        return response()->json(
+            $this->budgets->saveMonthly($request->user()->id, (int) $data['year'], $data['rows']),
         );
     }
 }

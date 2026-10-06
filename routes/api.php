@@ -43,7 +43,9 @@ Route::middleware('firebase.jwt')->group(function () {
     Route::get('/managed-cash-flow', [ManagedCashFlowController::class, 'show'])->name('managed-cash-flow.show');
     Route::post('/managed-cash-flow', [ManagedCashFlowController::class, 'store'])->name('managed-cash-flow.store');
 
-    // Presupuesto (budget) — annual.
+    // Presupuesto (budget) — annual + monthly.
+    Route::get('/budgets/monthly', [BudgetController::class, 'monthly'])->name('budgets.monthly');
+    Route::post('/budgets/monthly', [BudgetController::class, 'storeMonthly'])->name('budgets.monthly.store');
     Route::get('/budgets', [BudgetController::class, 'index'])->name('budgets.index');
     Route::post('/budgets', [BudgetController::class, 'store'])->name('budgets.store');
 

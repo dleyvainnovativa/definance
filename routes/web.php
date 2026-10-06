@@ -22,6 +22,7 @@ Route::middleware('auth')->group(function () {
     Route::view('/cash-flow', 'pages.reports.cash-flow')->name('cash-flow');
     Route::view('/managed-cash-flow', 'pages.managed-cash-flow')->name('managed-cash-flow');
     Route::view('/budget', 'pages.budget')->name('budget');
+    Route::view('/budget-monthly', 'pages.budget-monthly')->name('budget-monthly');
     Route::view('/iva', 'pages.reports.iva')->name('iva');
 
     Route::view('/profile', 'pages.profile')->name('profile');
