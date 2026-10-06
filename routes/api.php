@@ -34,6 +34,8 @@ Route::middleware('firebase.jwt')->group(function () {
     Route::get('/cash-count', [CashCountController::class, 'index'])->name('cash-count.index');
     Route::post('/cash-count', [CashCountController::class, 'store'])->name('cash-count.store');
     Route::get('/entries/{entry}', [JournalEntryController::class, 'show'])->name('entries.show');
+    Route::put('/entries/{entry}', [JournalEntryController::class, 'update'])->name('entries.update');
+    Route::post('/entries/{entry}/post', [JournalEntryController::class, 'postDraft'])->name('entries.post');
     Route::post('/entries/{entry}/void', [JournalEntryController::class, 'void'])->name('entries.void');
 
     // Taxes (IVA).

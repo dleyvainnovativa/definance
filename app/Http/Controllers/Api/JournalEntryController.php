@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\EntryStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreJournalEntryRequest;
 use App\Http\Resources\JournalEntryResource;
@@ -32,6 +33,16 @@ class JournalEntryController extends Controller
                 'lines',
                 fn ($q) => $q->where('account_id', $request->integer('account_id'))
             ))
+            // Advanced filters: entries touching an account specifically on the
+            // debit side or the credit side.
+            ->when($request->filled('debit_account_id'), fn ($q) => $q->whereHas(
+                'lines',
+                fn ($q) => $q->where('account_id', $request->integer('debit_account_id'))->whereNotNull('debit')
+            ))
+            ->when($request->filled('credit_account_id'), fn ($q) => $q->whereHas(
+                'lines',
+                fn ($q) => $q->where('account_id', $request->integer('credit_account_id'))->whereNotNull('credit')
+            ))
             ->orderByDesc('entry_date')
             ->orderByDesc('id')
             ->paginate($request->integer('per_page', 25));
@@ -50,6 +61,7 @@ class JournalEntryController extends Controller
             legs: $data['legs'],
             description: $data['description'] ?? null,
             reference: $data['reference'] ?? null,
+            status: ($data['status'] ?? 'posted') === 'draft' ? EntryStatus::Draft : EntryStatus::Posted,
         );
 
         return JournalEntryResource::make($entry->load('lines.account'))
@@ -61,6 +73,33 @@ class JournalEntryController extends Controller
         $this->authorize('view', $entry);
 
         return JournalEntryResource::make($entry->load('lines.account'));
+    }
+
+    /** Edit a draft entry's legs/header in place (policy: owner + draft). */
+    public function update(StoreJournalEntryRequest $request, JournalEntry $entry): JournalEntryResource
+    {
+        $this->authorize('update', $entry);
+        $data = $request->validated();
+
+        $entry = $this->posting->updateDraft(
+            entry: $entry,
+            entryDate: $data['entry_date'],
+            legs: $data['legs'],
+            description: $data['description'] ?? null,
+            reference: $data['reference'] ?? null,
+        );
+
+        return JournalEntryResource::make($entry->load('lines.account'));
+    }
+
+    /** Post a draft entry (draft → posted). */
+    public function postDraft(JournalEntry $entry): JournalEntryResource
+    {
+        $this->authorize('update', $entry);
+
+        $posted = $this->posting->postDraft($entry);
+
+        return JournalEntryResource::make($posted->load('lines.account'));
     }
 
     public function void(JournalEntry $entry): JournalEntryResource

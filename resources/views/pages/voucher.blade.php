@@ -76,9 +76,9 @@
             const lines = e.lines || [];
             document.getElementById('vLines').innerHTML = lines.map(l => `
                 <tr>
-                    <td class="num code">${l.account?.code ?? ''}</td>
-                    <td>${l.account?.name ?? ''}</td>
-                    <td>${l.line_description ?? ''}</td>
+                    <td class="num code">${l.account_code ?? ''}</td>
+                    <td>${l.account_name ?? ''}</td>
+                    <td>${l.description ?? ''}</td>
                     <td class="amount num">${l.debit ? format.money(l.debit) : ''}</td>
                     <td class="amount num">${l.credit ? format.money(l.credit) : ''}</td>
                 </tr>`).join('');

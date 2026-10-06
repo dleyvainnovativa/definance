@@ -29,6 +29,8 @@
         </main>
     </div>
 
+    @include('partials.calculator')
+
     <script type="module">
         document.getElementById('logoutBtn')?.addEventListener('click', async () => {
             try { await DF.auth.logout(); } catch (e) {}

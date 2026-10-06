@@ -26,10 +26,11 @@ import { auth } from './lib/auth.js';
 import { format } from './lib/format.js';
 import { guard } from './lib/guard.js';
 import { grid } from './lib/grid.js';
+import { charts } from './lib/charts.js';
 import * as firebase from './firebase/firebase.js';
 
 window.DF = {
-    http, HttpError, notify, loading, modal, forms, auth, format, guard, grid, firebase,
+    http, HttpError, notify, loading, modal, forms, auth, format, guard, grid, charts, firebase,
     theme: { setTheme, toggleTheme },
     bootstrap,
 };

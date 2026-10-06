@@ -43,6 +43,17 @@
         </div>
     </section>
 
+    <div class="report-cols" style="margin-bottom:1.5rem;">
+        <div class="card card-pad">
+            <h2 style="font-size:1.02rem;margin-bottom:.6rem;">Resultado mensual <span style="color:var(--c-text-muted);font-weight:500;font-size:.85rem;">(6 meses)</span></h2>
+            <div id="trendChart"><div class="empty">Cargando…</div></div>
+        </div>
+        <div class="card card-pad">
+            <h2 style="font-size:1.02rem;margin-bottom:.6rem;">Gastos por cuenta <span style="color:var(--c-text-muted);font-weight:500;font-size:.85rem;">(año)</span></h2>
+            <div id="expenseChart"><div class="empty">Cargando…</div></div>
+        </div>
+    </div>
+
     <div class="card">
         <div class="card-pad d-flex align-items-center justify-content-between">
             <h2 style="font-size:1.02rem;">Movimientos recientes</h2>
@@ -67,7 +78,7 @@
 
     @push('scripts')
     <script type="module">
-        const { http, format, guard, notify } = DF;
+        const { http, format, guard, notify, charts } = DF;
 
         const todayISO = new Date().toISOString().slice(0, 10);
         const monthStart = todayISO.slice(0, 8) + '01';
@@ -79,11 +90,15 @@
             if (!user) return;
 
             try {
-                const [bs, is, entries] = await Promise.all([
+                const [bs, is, entries, dash] = await Promise.all([
                     http.get(`/reports/balance-sheet?as_of=${todayISO}`),
                     http.get(`/reports/income-statement?from=${monthStart}&to=${todayISO}`),
                     http.get('/entries?per_page=6'),
+                    http.get('/dashboard'),
                 ]);
+
+                charts.line('#trendChart', { points: (dash.trend || []).map(t => ({ label: t.label, value: t.net })) });
+                charts.bars('#expenseChart', { rows: (dash.expense_breakdown || []).map(e => ({ name: e.name, value: e.amount })) });
 
                 setText('periodLabel', `Al ${format.date(todayISO)}`);
 

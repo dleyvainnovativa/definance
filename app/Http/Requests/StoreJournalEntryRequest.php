@@ -20,6 +20,7 @@ class StoreJournalEntryRequest extends FormRequest
             'entry_date' => ['required', 'date'],
             'reference' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
+            'status' => ['nullable', \Illuminate\Validation\Rule::in(['draft', 'posted'])],
 
             'legs' => ['required', 'array', 'min:2'],
             'legs.*.account_id' => ['required', new OwnedAccount],

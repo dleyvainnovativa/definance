@@ -31,4 +31,9 @@ class PostingException extends RuntimeException
     {
         return new self('Only a posted entry can be voided.');
     }
+
+    public static function notDraft(): self
+    {
+        return new self('Only a draft entry can be edited or posted.');
+    }
 }

@@ -97,6 +97,65 @@ class PostingService
     }
 
     /**
+     * Replace a DRAFT entry's legs and header in place. Only drafts can be
+     * edited — they are excluded from the ledger, so there is no history to
+     * rewrite. Posted entries are never edited (correct by void + re-post).
+     *
+     * @param  array<int,Leg|array<string,mixed>>  $legs
+     */
+    public function updateDraft(
+        JournalEntry $entry,
+        string $entryDate,
+        array $legs,
+        ?string $description = null,
+        ?string $reference = null,
+    ): JournalEntry {
+        if ($entry->status !== EntryStatus::Draft) {
+            throw PostingException::notDraft();
+        }
+
+        $legs = $this->normalizeLegs($legs);
+        $this->assertBalanced($legs);
+        $this->assertAccounts($entry->user_id, $legs);
+
+        return DB::transaction(function () use ($entry, $entryDate, $legs, $description, $reference) {
+            $entry->lines()->delete();
+            $entry->update([
+                'entry_date' => $entryDate,
+                'description' => $description,
+                'reference' => $reference,
+            ]);
+
+            foreach ($legs as $leg) {
+                $entry->lines()->create($leg->toLineAttributes($entry->user_id));
+            }
+
+            return $entry->load('lines');
+        });
+    }
+
+    /**
+     * Post a DRAFT entry: re-check that its stored lines balance, then flip it
+     * to posted. The entry keeps its id and lines.
+     */
+    public function postDraft(JournalEntry $entry): JournalEntry
+    {
+        if ($entry->status !== EntryStatus::Draft) {
+            throw PostingException::notDraft();
+        }
+
+        $debit = Money::sum($entry->lines->pluck('debit'));
+        $credit = Money::sum($entry->lines->pluck('credit'));
+        if (Money::cmp($debit, $credit) !== 0) {
+            throw UnbalancedEntryException::make($debit, $credit);
+        }
+
+        $entry->update(['status' => EntryStatus::Posted, 'posted_at' => now()]);
+
+        return $entry;
+    }
+
+    /**
      * @param  array<int,Leg|array<string,mixed>>  $legs
      * @return array<int,Leg>
      */
