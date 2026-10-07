@@ -35,6 +35,15 @@ class JournalEntryPolicy
         return $entry->user_id === $user->id && $entry->status === EntryStatus::Draft;
     }
 
+    /**
+     * A posted entry's header metadata (date, description, reference) may be
+     * corrected in place. Amounts/legs stay immutable — those go through void.
+     */
+    public function updateMeta(User $user, JournalEntry $entry): bool
+    {
+        return $entry->user_id === $user->id && $entry->status === EntryStatus::Posted;
+    }
+
     public function delete(User $user, JournalEntry $entry): bool
     {
         return $entry->user_id === $user->id && $entry->status === EntryStatus::Draft;

@@ -36,4 +36,9 @@ class PostingException extends RuntimeException
     {
         return new self('Only a draft entry can be edited or posted.');
     }
+
+    public static function notPostedForMeta(): self
+    {
+        return new self('Only a posted entry can have its date, description or reference edited.');
+    }
 }

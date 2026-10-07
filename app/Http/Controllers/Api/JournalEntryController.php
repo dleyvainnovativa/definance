@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Enums\EntryStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreJournalEntryRequest;
+use App\Http\Requests\UpdatePostedEntryRequest;
 use App\Http\Resources\JournalEntryResource;
 use App\Models\JournalEntry;
 use App\Services\Ledger\PostingService;
@@ -85,6 +86,22 @@ class JournalEntryController extends Controller
             entry: $entry,
             entryDate: $data['entry_date'],
             legs: $data['legs'],
+            description: $data['description'] ?? null,
+            reference: $data['reference'] ?? null,
+        );
+
+        return JournalEntryResource::make($entry->load('lines.account'));
+    }
+
+    /** Edit a POSTED entry's metadata only (date/description/reference). */
+    public function updateMeta(UpdatePostedEntryRequest $request, JournalEntry $entry): JournalEntryResource
+    {
+        $this->authorize('updateMeta', $entry);
+        $data = $request->validated();
+
+        $entry = $this->posting->updatePostedMeta(
+            entry: $entry,
+            entryDate: $data['entry_date'],
             description: $data['description'] ?? null,
             reference: $data['reference'] ?? null,
         );

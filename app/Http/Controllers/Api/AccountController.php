@@ -7,6 +7,7 @@ use App\Http\Requests\StoreAccountRequest;
 use App\Http\Requests\UpdateAccountRequest;
 use App\Http\Resources\AccountResource;
 use App\Models\ChartOfAccount;
+use App\Rules\OwnedAccount;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -31,6 +32,43 @@ class AccountController extends Controller
             ->get();
 
         return AccountResource::collection($accounts);
+    }
+
+    /**
+     * Suggest the next child code for a parent (SAT código agrupador style,
+     * dot-segmented: 100 → 100.01 → 100.01.01). Takes the max existing child
+     * segment + 1 (gaps are not reused), zero-padded to 2 digits, and keeps
+     * incrementing past any already-taken code. The form pre-fills this; it
+     * stays editable and the unique rule is the final guard.
+     */
+    public function nextCode(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'parent_id' => ['required', new OwnedAccount(requirePostable: false)],
+        ]);
+
+        $userId = $request->user()->id;
+        $parent = ChartOfAccount::query()->where('user_id', $userId)->findOrFail($data['parent_id']);
+        $prefix = $parent->code.'.';
+
+        $max = 0;
+        foreach (ChartOfAccount::query()->where('user_id', $userId)->where('parent_id', $parent->id)->pluck('code') as $code) {
+            if (! str_starts_with((string) $code, $prefix)) {
+                continue;
+            }
+            $segment = explode('.', substr((string) $code, strlen($prefix)))[0];
+            if (ctype_digit($segment)) {
+                $max = max($max, (int) $segment);
+            }
+        }
+
+        $next = $max + 1;
+        do {
+            $candidate = $prefix.str_pad((string) $next, 2, '0', STR_PAD_LEFT);
+            $next++;
+        } while (ChartOfAccount::query()->where('user_id', $userId)->where('code', $candidate)->exists());
+
+        return response()->json(['parent_id' => $parent->id, 'next_code' => $candidate]);
     }
 
     public function store(StoreAccountRequest $request): JsonResponse

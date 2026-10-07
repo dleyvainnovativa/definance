@@ -34,7 +34,7 @@
 
     <div class="card">
         <div class="table-wrap">
-            <table class="ledger">
+            <table class="ledger ledger--cards">
                 <thead><tr><th>Fecha</th><th>Descripción</th><th>Referencia</th><th>Estado</th><th class="amount">Importe</th><th class="amount">Acciones</th></tr></thead>
                 <tbody id="rows"><tr><td colspan="6" class="empty">Cargando…</td></tr></tbody>
             </table>
@@ -96,10 +96,40 @@
         </div>
     </div>
 
+    {{-- Edit metadata of a POSTED entry (date / reference / description only). --}}
+    <div class="modal fade" id="metaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="metaForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Editar datos de la póliza</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p style="color:var(--c-text-muted);font-size:.84rem;margin:0 0 1rem;">
+                            Sólo se puede cambiar la fecha, la referencia y la descripción. Los importes de una póliza
+                            contabilizada no se editan: para corregir montos, cancela la póliza y vuelve a registrarla.
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-sm-5"><label class="form-label" for="meta_date">Fecha</label><input class="form-control" id="meta_date" type="date" required></div>
+                            <div class="col-sm-7"><label class="form-label" for="meta_reference">Referencia</label><input class="form-control" id="meta_reference" placeholder="Opcional"></div>
+                            <div class="col-12"><label class="form-label" for="meta_description">Descripción</label><input class="form-control" id="meta_description" placeholder="Opcional"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="saveMetaBtn" data-loading-text="Guardando…">Guardar cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     @push('scripts')
     <script type="module">
-        const { http, notify, loading, modal, format, guard, bootstrap } = DF;
+        const { http, notify, loading, modal, format, guard, bootstrap, select } = DF;
         let optionsHtml = '';
+        let metaId = null;                          // posted entry whose metadata is being edited
         let tax = { rates: {}, accounts: { acreditable: null, trasladado: null } };
         let page = 1, lastPage = 1;
         let editingId = null;                       // draft being edited, or null (create)
@@ -114,6 +144,7 @@
                 tax = taxes;
                 document.getElementById('fDebit').innerHTML = '<option value="">Cualquiera</option>' + acc.data.map(a => `<option value="${a.id}">${a.code} · ${a.name}</option>`).join('');
                 document.getElementById('fCredit').innerHTML = document.getElementById('fDebit').innerHTML;
+                select.mount('#fDebit'); select.mount('#fCredit');
             } catch (e) { notify.error(e.message); }
 
             document.getElementById('applyBtn').addEventListener('click', () => { page = 1; loadEntries(); });
@@ -129,10 +160,11 @@
                 page = 1; loadEntries();
             });
             document.getElementById('advClear').addEventListener('click', () => {
-                document.getElementById('fDebit').value = ''; document.getElementById('fCredit').value = '';
+                select.setValue('#fDebit', ''); select.setValue('#fCredit', '');
                 advFilters = { debit_account_id: '', credit_account_id: '' };
                 page = 1; loadEntries();
             });
+            document.getElementById('metaForm').addEventListener('submit', (e) => { e.preventDefault(); saveMeta(); });
             loadEntries();
         }
 
@@ -141,6 +173,7 @@
             ['from', 'to', 'status', 'search'].forEach(id => { const v = document.getElementById(id).value; if (v) p.set(id, v); });
             if (advFilters.debit_account_id) p.set('debit_account_id', advFilters.debit_account_id);
             if (advFilters.credit_account_id) p.set('credit_account_id', advFilters.credit_account_id);
+            loading.skeleton('#rows', { rows: 6 });
             try {
                 const res = await http.get('/entries?' + p.toString());
                 lastPage = res.meta.last_page;
@@ -155,21 +188,23 @@
             const STATUS = { posted: 'Contabilizado', void: 'Cancelado', draft: 'Borrador' };
             body.innerHTML = rows.map(e => `
                 <tr>
-                    <td class="num code">${format.date(e.entry_date)}</td>
-                    <td>${e.description ?? ''}</td>
-                    <td class="code">${e.reference ?? ''}</td>
-                    <td><span class="status ${e.status}">${STATUS[e.status] ?? e.status}</span></td>
-                    <td class="amount num">${format.money(e.totals?.debit ?? 0)}</td>
+                    <td data-label="Fecha" class="num code">${format.date(e.entry_date)}</td>
+                    <td data-label="Descripción">${e.description ?? ''}</td>
+                    <td data-label="Referencia" class="code">${e.reference ?? ''}</td>
+                    <td data-label="Estado"><span class="status ${e.status}">${STATUS[e.status] ?? e.status}</span></td>
+                    <td data-label="Importe" class="amount num">${format.money(e.totals?.debit ?? 0)}</td>
                     <td class="amount"><span class="row-actions">
                         <a class="btn-icon" href="/voucher?id=${e.id}" title="Ver comprobante">🧾</a>
                         ${e.status === 'draft' ? `<button class="btn-icon" data-edit="${e.id}" title="Editar borrador">✎</button>
                             <button class="btn-icon" data-post="${e.id}" title="Contabilizar">✓</button>` : ''}
-                        ${e.status === 'posted' ? `<button class="btn-icon danger" data-void="${e.id}" title="Cancelar póliza">⊘</button>` : ''}
+                        ${e.status === 'posted' ? `<button class="btn-icon" data-meta="${e.id}" title="Editar fecha / datos">✎</button>
+                            <button class="btn-icon danger" data-void="${e.id}" title="Cancelar póliza">⊘</button>` : ''}
                     </span></td>
                 </tr>`).join('');
             body.querySelectorAll('[data-void]').forEach(b => b.addEventListener('click', () => voidEntry(b.dataset.void)));
             body.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEdit(rows.find(r => r.id == b.dataset.edit))));
             body.querySelectorAll('[data-post]').forEach(b => b.addEventListener('click', () => postDraft(b.dataset.post)));
+            body.querySelectorAll('[data-meta]').forEach(b => b.addEventListener('click', () => openMeta(rows.find(r => r.id == b.dataset.meta))));
         }
 
         async function voidEntry(id) {
@@ -182,6 +217,35 @@
             if (!window.confirm('¿Contabilizar esta póliza? Dejará de ser un borrador.')) return;
             try { await http.post(`/entries/${id}/post`); notify.success('Póliza contabilizada.'); loadEntries(); }
             catch (e) { notify.error(e.message); }
+        }
+
+        // ---- posted-entry metadata edit (date / reference / description only) ----
+        function openMeta(e) {
+            if (!e) return;
+            metaId = e.id;
+            document.getElementById('meta_date').value = e.entry_date;
+            document.getElementById('meta_reference').value = e.reference ?? '';
+            document.getElementById('meta_description').value = e.description ?? '';
+            modal.open('#metaModal');
+        }
+
+        async function saveMeta() {
+            const btn = document.getElementById('saveMetaBtn');
+            await loading.withLoading(btn, async () => {
+                try {
+                    await http.patch(`/entries/${metaId}/meta`, {
+                        entry_date: document.getElementById('meta_date').value,
+                        reference: document.getElementById('meta_reference').value || null,
+                        description: document.getElementById('meta_description').value || null,
+                    });
+                    modal.close('#metaModal');
+                    notify.success('Póliza actualizada.');
+                    loadEntries();
+                } catch (err) {
+                    const msg = err.body?.errors ? Object.values(err.body.errors)[0][0] : err.message;
+                    notify.error(msg);
+                }
+            });
         }
 
         // ---- entry form ----
@@ -221,7 +285,7 @@
             (e.lines || []).forEach(l => {
                 addLeg();
                 const row = document.getElementById('legs').lastElementChild;
-                row.querySelector('.leg-account').value = l.account_id;
+                select.setValue(row.querySelector('.leg-account'), l.account_id);
                 if (l.debit) row.querySelector('.leg-debit').value = Number(l.debit);
                 if (l.credit) row.querySelector('.leg-credit').value = Number(l.credit);
             });
@@ -246,6 +310,7 @@
             row.querySelector('.leg-iva').addEventListener('change', syncIva);
             row.querySelector('.leg-remove').addEventListener('click', () => { row.remove(); syncIva(); });
             document.getElementById('legs').appendChild(row);
+            select.mount(row.querySelector('.leg-account'), { placeholder: 'Selecciona…' });
         }
 
         function appendAuto(acct, amount, isDebit, code, rate, base) {

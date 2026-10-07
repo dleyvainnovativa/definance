@@ -135,6 +135,34 @@ class PostingService
     }
 
     /**
+     * Edit a POSTED entry's header metadata only — date, description, reference.
+     * Legs and amounts are never touched: the ledger stays append-only, so money
+     * is still corrected by void + re-post. Because balances are computed on
+     * read, moving the date is safe and causes no descuadre.
+     *
+     * (Hook: when período-cierre lands, reject moving entry_date across a closed
+     * period boundary here. No-op today — no closed periods exist yet.)
+     */
+    public function updatePostedMeta(
+        JournalEntry $entry,
+        string $entryDate,
+        ?string $description = null,
+        ?string $reference = null,
+    ): JournalEntry {
+        if ($entry->status !== EntryStatus::Posted) {
+            throw PostingException::notPostedForMeta();
+        }
+
+        $entry->update([
+            'entry_date' => $entryDate,
+            'description' => $description,
+            'reference' => $reference,
+        ]);
+
+        return $entry->fresh()->load('lines');
+    }
+
+    /**
      * Post a DRAFT entry: re-check that its stored lines balance, then flip it
      * to posted. The entry keeps its id and lines.
      */

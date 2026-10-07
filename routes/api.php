@@ -19,7 +19,9 @@ Route::get('/ping', fn () => response()->json(['status' => 'ok']))->name('api.pi
 Route::middleware('firebase.jwt')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('api.dashboard');
 
-    // Chart of accounts CRUD.
+    // Chart of accounts CRUD. Static helper route before the resource so it
+    // isn't captured by /accounts/{account}.
+    Route::get('/accounts/next-code', [AccountController::class, 'nextCode'])->name('accounts.next-code');
     Route::apiResource('accounts', AccountController::class);
 
     // Journal entries.
@@ -36,6 +38,7 @@ Route::middleware('firebase.jwt')->group(function () {
     Route::post('/cash-count', [CashCountController::class, 'store'])->name('cash-count.store');
     Route::get('/entries/{entry}', [JournalEntryController::class, 'show'])->name('entries.show');
     Route::put('/entries/{entry}', [JournalEntryController::class, 'update'])->name('entries.update');
+    Route::patch('/entries/{entry}/meta', [JournalEntryController::class, 'updateMeta'])->name('entries.meta');
     Route::post('/entries/{entry}/post', [JournalEntryController::class, 'postDraft'])->name('entries.post');
     Route::post('/entries/{entry}/void', [JournalEntryController::class, 'void'])->name('entries.void');
 

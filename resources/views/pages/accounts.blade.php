@@ -35,7 +35,7 @@
 
     <div class="card">
         <div class="table-wrap">
-            <table class="ledger">
+            <table class="ledger ledger--cards">
                 <thead>
                     <tr><th>Código</th><th>Nombre</th><th>Tipo</th><th>Naturaleza</th><th>Detalle</th><th class="amount">Acciones</th></tr>
                 </thead>
@@ -87,7 +87,7 @@
 
     @push('scripts')
     <script type="module">
-        const { http, notify, loading, modal, guard } = DF;
+        const { http, notify, loading, modal, guard, select } = DF;
         const TYPE_LABEL = { asset:'Activo', liability:'Pasivo', equity:'Capital', income:'Ingresos', expense:'Gastos' };
         let accounts = [];
 
@@ -96,9 +96,12 @@
             await refresh();
             document.getElementById('search').addEventListener('input', render);
             document.getElementById('typeFilter').addEventListener('change', render);
+            // Auto-assign the next child code when a parent is chosen (create only).
+            document.getElementById('parent_id').addEventListener('change', suggestCode);
         }
 
         async function refresh() {
+            loading.skeleton('#rows', { rows: 6 });
             try {
                 const res = await http.get('/accounts');
                 accounts = res.data;
@@ -108,9 +111,19 @@
         }
 
         function fillParents() {
-            const sel = document.getElementById('parent_id');
-            sel.innerHTML = '<option value="">— Ninguna —</option>' +
-                accounts.map(a => `<option value="${a.id}">${a.code} · ${a.name}</option>`).join('');
+            const opts = [{ value: '', label: '— Ninguna —' }]
+                .concat(accounts.map(a => ({ value: a.id, label: `${a.code} · ${a.name}` })));
+            select.setOptions('#parent_id', opts);
+        }
+
+        async function suggestCode() {
+            const parentId = document.getElementById('parent_id').value;
+            const isNew = !document.getElementById('accountId').value;
+            if (!isNew || !parentId) return;
+            try {
+                const r = await http.get(`/accounts/next-code?parent_id=${parentId}`);
+                if (r.next_code) document.getElementById('code').value = r.next_code;
+            } catch (e) { /* leave the code field as-is */ }
         }
 
         function render() {
@@ -124,11 +137,11 @@
             if (!list.length) { body.innerHTML = '<tr><td colspan="6" class="empty">Sin cuentas que coincidan.</td></tr>'; return; }
             body.innerHTML = list.map(a => `
                 <tr>
-                    <td class="num code">${a.code}</td>
-                    <td>${a.name}</td>
-                    <td>${TYPE_LABEL[a.type]}</td>
-                    <td><span class="badge-nature ${a.normal_balance}">${a.nature_label}</span></td>
-                    <td>${a.is_postable ? 'Detalle' : 'Grupo'}</td>
+                    <td data-label="Código" class="num code">${a.code}</td>
+                    <td data-label="Nombre">${a.name}</td>
+                    <td data-label="Tipo">${TYPE_LABEL[a.type]}</td>
+                    <td data-label="Naturaleza"><span class="badge-nature ${a.normal_balance}">${a.nature_label}</span></td>
+                    <td data-label="Detalle">${a.is_postable ? 'Detalle' : 'Grupo'}</td>
                     <td class="amount">
                         <span class="row-actions">
                             <button class="btn-icon" data-edit="${a.id}" title="Editar" ${a.is_editable ? '' : 'disabled'}>✎</button>
@@ -146,6 +159,7 @@
             document.getElementById('accountForm').reset();
             document.getElementById('accountId').value = '';
             document.getElementById('type').disabled = false;
+            select.setValue('#parent_id', '');
             document.getElementById('is_postable').checked = true;
             document.getElementById('is_active').checked = true;
             modal.open('#accountModal');
@@ -160,7 +174,7 @@
             document.getElementById('name').value = a.name;
             document.getElementById('type').value = a.type;
             document.getElementById('type').disabled = true; // immutable
-            document.getElementById('parent_id').value = a.parent_id ?? '';
+            select.setValue('#parent_id', a.parent_id ?? '');
             document.getElementById('is_postable').checked = a.is_postable;
             document.getElementById('is_active').checked = a.is_active;
             modal.open('#accountModal');
