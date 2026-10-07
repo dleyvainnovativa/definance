@@ -27,10 +27,11 @@ import { format } from './lib/format.js';
 import { guard } from './lib/guard.js';
 import { grid } from './lib/grid.js';
 import { charts } from './lib/charts.js';
+import { select } from './lib/select.js';
 import * as firebase from './firebase/firebase.js';
 
 window.DF = {
-    http, HttpError, notify, loading, modal, forms, auth, format, guard, grid, charts, firebase,
+    http, HttpError, notify, loading, modal, forms, auth, format, guard, grid, charts, select, firebase,
     theme: { setTheme, toggleTheme },
     bootstrap,
 };
