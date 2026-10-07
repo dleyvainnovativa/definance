@@ -34,6 +34,7 @@
     </div>
 
     @include('partials.calculator')
+    @include('partials.entry-modal')
 
     <script type="module">
         document.getElementById('logoutBtn')?.addEventListener('click', async () => {

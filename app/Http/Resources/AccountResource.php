@@ -24,6 +24,7 @@ class AccountResource extends JsonResource
             'nature_label' => $this->normal_balance->label(), // Deudora / Acreedora
             'is_postable' => $this->is_postable,
             'is_active' => $this->is_active,
+            'is_cash' => $this->is_cash,
             'is_editable' => $this->is_editable,
             'is_deletable' => $this->is_deletable,
             'children' => AccountResource::collection($this->whenLoaded('children')),

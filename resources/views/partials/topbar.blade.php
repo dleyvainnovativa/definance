@@ -16,6 +16,9 @@ $initial = mb_strtoupper(mb_substr($display, 0, 1));
     </div>
 
     <div class="topbar-actions">
+        <button type="button" class="icon-btn" data-quick-entry aria-label="Nuevo movimiento" title="Nuevo movimiento">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+        </button>
         <button type="button" class="icon-btn" data-bs-toggle="modal" data-bs-target="#calcModal" aria-label="Calculadora" title="Calculadora">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="4" y="2" width="16" height="20" rx="2" />

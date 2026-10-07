@@ -219,3 +219,36 @@ table.ledger tbody[data-skeleton] tr:hover td { background: transparent; }
 .report-chart { padding: 1.1rem 1.2rem; margin-bottom: 1rem; }
 .report-chart h2 { font-size: .9rem; color: var(--c-text-muted); margin: 0 0 .7rem; font-weight: 600; }
 .report-chart:last-child { margin-bottom: 0; }
+
+/* ----------------------------------------- 7. entry modal (simple + avanzado, Phase 23) */
+/* mode toggle (segmented) */
+.mode-tabs { display: inline-flex; border: 1px solid var(--c-border-strong); border-radius: var(--radius); overflow: hidden; }
+.mode-tab { background: var(--c-surface); color: var(--c-text-muted); border: none; padding: .4rem .85rem; font-size: .82rem; font-weight: 600; font-family: var(--font-ui); cursor: pointer; }
+.mode-tab + .mode-tab { border-left: 1px solid var(--c-border-strong); }
+.mode-tab.active { background: var(--c-primary-soft); color: var(--c-primary); }
+
+/* advanced legs grid */
+.leg-head, .leg-row { display: grid; grid-template-columns: 1fr 120px 120px 96px 34px; gap: .5rem; align-items: center; }
+.leg-head { font-size: .76rem; color: var(--c-text-muted); font-weight: 600; padding: 0 .1rem; }
+.leg-head .amount, .leg-row .amount input { text-align: right; }
+.entry-legs { display: flex; flex-direction: column; gap: .5rem; }
+.leg-row.auto .acct-fixed { display: flex; align-items: center; gap: .45rem; font-size: .85rem; color: var(--c-text-muted); padding: .35rem .2rem; }
+.leg-row.auto input { background: var(--c-surface-2); }
+.iva-tag { font-size: .68rem; font-weight: 600; color: var(--c-accent); white-space: nowrap; }
+
+.totbar { display: flex; gap: 1.6rem; justify-content: flex-end; align-items: center; padding: .85rem .1rem 0; margin-top: .4rem; border-top: 1px solid var(--c-border); }
+.tot { display: flex; flex-direction: column; align-items: flex-end; }
+.tot .k { font-size: .74rem; color: var(--c-text-muted); }
+.tot .v { font-weight: 600; }
+.tot .v.ok { color: var(--c-pos); }
+.tot .v.bad { color: var(--c-neg); }
+
+/* simple movement form */
+.simple-hint { color: var(--c-text-muted); font-size: .82rem; margin: .2rem 0 0; }
+
+@media (max-width: 640px) {
+    .leg-head { display: none; }
+    .leg-row { grid-template-columns: 1fr 1fr; grid-auto-rows: auto; }
+    .leg-row .acct, .leg-row .acct-fixed { grid-column: 1 / -1; }
+    .totbar { flex-wrap: wrap; gap: 1rem; }
+}
