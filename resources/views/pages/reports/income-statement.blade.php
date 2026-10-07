@@ -4,25 +4,27 @@
 @section('heading', 'Estado de resultados')
 
 @section('content')
-    <div class="page-head"><div><h1>Estado de resultados</h1><p>Ingresos menos gastos del periodo.</p></div></div>
+    <div class="page-head">
+        <div><h1>Estado de resultados</h1><p>Ingresos menos gastos del periodo.</p></div>
+        <button class="btn btn-ghost" id="chartBtn" disabled><i class="fa-solid fa-chart-column" aria-hidden="true"></i> Ver gráficas</button>
+    </div>
 
     @include('partials.period-filter')
 
-    <div class="report-cols">
-        <div class="card">
-            <table class="statement" id="statement">
-                <tbody><tr><td class="empty">Genera el reporte para ver el resultado.</td></tr></tbody>
-            </table>
-        </div>
-        <div class="card report-chart" id="isChartCard" hidden>
-            <h2>Composición de gastos</h2>
-            <div id="isChart"></div>
-        </div>
+    <div class="card" style="max-width:680px;">
+        <table class="statement" id="statement">
+            <tbody><tr><td class="empty">Genera el reporte para ver el resultado.</td></tr></tbody>
+        </table>
     </div>
 
     @push('scripts')
     <script type="module">
-        const { http, notify, format, guard, loading, charts } = DF;
+        const { http, notify, format, guard, loading, charts, chartModal } = DF;
+        function wireChart(title, views) {
+            const btn = document.getElementById('chartBtn');
+            btn.disabled = !views.length;
+            btn.onclick = views.length ? () => chartModal.open({ title, views }) : null;
+        }
         async function run() {
             if (!await guard.ensureAuth()) return;
             const from = document.getElementById('from').value, to = document.getElementById('to').value;
@@ -39,10 +41,17 @@
                 html += `<tr class="total"><td>${Number(net) >= 0 ? 'Utilidad' : 'Pérdida'} del periodo</td><td class="amount num ${format.signClass(net)}">${format.money(net)}</td></tr>`;
                 document.querySelector('#statement tbody').innerHTML = html;
 
-                const slices = r.expenses.map(x => ({ name: x.name, value: Number(x.amount) || 0 })).filter(x => x.value > 0);
-                const card = document.getElementById('isChartCard');
-                card.hidden = slices.length === 0;
-                if (slices.length) charts.donut('#isChart', { slices });
+                const toSlices = (rows) => rows.map(x => ({ name: x.name, value: Number(x.amount) || 0 })).filter(x => x.value > 0);
+                const gastos = toSlices(r.expenses), ingresos = toSlices(r.revenue);
+                const views = [];
+                if (gastos.length) views.push({ label: 'Composición de gastos', render: (el) => charts.donut(el, { slices: gastos }) });
+                if (ingresos.length) views.push({ label: 'Composición de ingresos', render: (el) => charts.donut(el, { slices: ingresos }) });
+                views.push({ label: 'Ingresos vs Gastos', render: (el) => charts.stackedBars(el, {
+                    series: [{ key: 'ingresos', name: 'Ingresos' }, { key: 'gastos', name: 'Gastos' }],
+                    rows: [{ label: 'Periodo', ingresos: Number(r.totals.revenue) || 0, gastos: Number(r.totals.expenses) || 0 }],
+                    stacked: false,
+                }) });
+                wireChart(`Estado de resultados · ${from} → ${to}`, (gastos.length || ingresos.length) ? views : []);
             } catch (e) { notify.error(e.message); }
         }
         window.__runReport = run;

@@ -246,6 +246,17 @@ table.ledger tbody[data-skeleton] tr:hover td { background: transparent; }
 /* simple movement form */
 .simple-hint { color: var(--c-text-muted); font-size: .82rem; margin: .2rem 0 0; }
 
+/* page-head: title left, action buttons right (markup already assumes this) */
+.page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+
+/* ----------------------------------------- 8. fullscreen chart modal (Phase 24) */
+.chart-modal-switch { display: flex; align-items: center; gap: .5rem; margin-left: auto; margin-right: 1rem; }
+.chart-modal-switch .form-select { min-width: 220px; }
+.chart-modal-canvas { max-width: 1040px; margin: 1.5rem auto; }
+.chart-modal-canvas svg { max-height: 72vh; }
+.chart-modal-canvas .chart-donut svg { max-width: 360px; }
+.chart-modal-canvas .chart-legend { font-size: .92rem; }
+
 @media (max-width: 640px) {
     .leg-head { display: none; }
     .leg-row { grid-template-columns: 1fr 1fr; grid-auto-rows: auto; }

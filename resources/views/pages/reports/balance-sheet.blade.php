@@ -6,7 +6,10 @@
 @section('content')
     <div class="page-head">
         <div><h1>Balance general</h1><p>Activos = Pasivos + Capital, a una fecha.</p></div>
-        <span class="pill" id="balancedPill" hidden></span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="pill" id="balancedPill" hidden></span>
+            <button class="btn btn-ghost" id="chartBtn" disabled><i class="fa-solid fa-chart-column" aria-hidden="true"></i> Ver gráficas</button>
+        </div>
     </div>
 
     @include('partials.period-filter', ['target' => 'asof'])
@@ -22,15 +25,14 @@
         </div>
     </div>
 
-    <div class="card report-chart" id="bsChartCard" hidden style="margin-top:1rem;">
-        <h2>Estructura financiera</h2>
-        <div id="bsChart"></div>
-    </div>
-
     @push('scripts')
     <script type="module">
-        const { http, notify, format, guard, loading, charts } = DF;
-
+        const { http, notify, format, guard, loading, charts, chartModal } = DF;
+        function wireChart(title, views) {
+            const btn = document.getElementById('chartBtn');
+            btn.disabled = !views.length;
+            btn.onclick = views.length ? () => chartModal.open({ title, views }) : null;
+        }
         async function run() {
             if (!await guard.ensureAuth()) return;
             const asOf = document.getElementById('as_of').value;
@@ -57,14 +59,18 @@
                 pill.className = 'pill ' + (r.balanced ? 'ok' : 'bad');
                 pill.textContent = r.balanced ? 'Cuadrado' : 'Descuadre';
 
-                const slices = [
+                const structure = [
                     { name: 'Activos', value: Number(r.totals.assets) || 0 },
                     { name: 'Pasivos', value: Number(r.totals.liabilities) || 0 },
                     { name: 'Capital', value: Number(r.totals.equity_with_result) || 0 },
                 ].filter(s => s.value > 0);
-                const card = document.getElementById('bsChartCard');
-                card.hidden = slices.length === 0;
-                if (slices.length) charts.donut('#bsChart', { slices });
+                const bars = (rows) => rows.map(x => ({ name: `${x.code} · ${x.name}`, value: Math.abs(Number(x.amount) || 0) }))
+                    .filter(x => x.value > 0).sort((a, b) => b.value - a.value).slice(0, 10);
+                const views = [];
+                if (structure.length) views.push({ label: 'Estructura financiera', render: (el) => charts.donut(el, { slices: structure }) });
+                if (r.assets.length) views.push({ label: 'Activos por cuenta', render: (el) => charts.bars(el, { rows: bars(r.assets) }) });
+                if (r.liabilities.length) views.push({ label: 'Pasivos por cuenta', render: (el) => charts.bars(el, { rows: bars(r.liabilities) }) });
+                wireChart(`Balance general · al ${asOf}`, structure.length ? views : []);
             } catch (e) { notify.error(e.message); }
         }
         window.__runReport = run;

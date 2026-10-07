@@ -4,14 +4,12 @@
 @section('heading', 'Balanza de comprobación')
 
 @section('content')
-    <div class="page-head"><div><h1>Balanza de comprobación</h1><p>Saldo inicial, movimientos y saldo final por cuenta.</p></div></div>
+    <div class="page-head">
+        <div><h1>Balanza de comprobación</h1><p>Saldo inicial, movimientos y saldo final por cuenta.</p></div>
+        <button class="btn btn-ghost" id="chartBtn" disabled><i class="fa-solid fa-chart-column" aria-hidden="true"></i> Ver gráficas</button>
+    </div>
 
     @include('partials.period-filter')
-
-    <div class="card report-chart" id="tbChartCard" hidden>
-        <h2>Cuentas con mayor saldo</h2>
-        <div id="tbChart"></div>
-    </div>
 
     <div class="card">
         <div class="table-wrap">
@@ -25,7 +23,12 @@
 
     @push('scripts')
     <script type="module">
-        const { http, notify, format, guard, loading, charts } = DF;
+        const { http, notify, format, guard, loading, charts, chartModal } = DF;
+        function wireChart(title, views) {
+            const btn = document.getElementById('chartBtn');
+            btn.disabled = !views.length;
+            btn.onclick = views.length ? () => chartModal.open({ title, views }) : null;
+        }
         async function run() {
             if (!await guard.ensureAuth()) return;
             const from = document.getElementById('from').value, to = document.getElementById('to').value;
@@ -33,11 +36,10 @@
             try {
                 const r = await http.get(`/reports/trial-balance?from=${from}&to=${to}`);
                 const body = document.getElementById('rows');
-                const chartCard = document.getElementById('tbChartCard');
                 if (!r.rows.length) {
                     body.innerHTML = '<tr><td colspan="6" class="empty">Sin movimientos en el periodo.</td></tr>';
                     document.getElementById('foot').innerHTML = '';
-                    chartCard.hidden = true;
+                    wireChart('', []);
                     return;
                 }
                 body.innerHTML = r.rows.map(x => `
@@ -52,13 +54,15 @@
                         <td class="amount num">${format.money(r.totals.credit)}</td>
                         <td class="amount num">${r.totals.debit === r.totals.credit ? '✓' : '≠'}</td></tr>`;
 
-                const top = r.rows
-                    .map(x => ({ name: `${x.code} · ${x.name}`, value: Math.abs(Number(x.closing) || 0) }))
-                    .filter(x => x.value > 0)
-                    .sort((a, b) => b.value - a.value)
-                    .slice(0, 8);
-                chartCard.hidden = top.length === 0;
-                if (top.length) charts.bars('#tbChart', { rows: top });
+                const top = (key) => r.rows
+                    .map(x => ({ name: `${x.code} · ${x.name}`, value: Math.abs(Number(x[key]) || 0) }))
+                    .filter(x => x.value > 0).sort((a, b) => b.value - a.value).slice(0, 10);
+                const views = [
+                    { label: 'Saldo final', render: (el) => charts.bars(el, { rows: top('closing') }) },
+                    { label: 'Cargos del periodo', render: (el) => charts.bars(el, { rows: top('debit') }) },
+                    { label: 'Abonos del periodo', render: (el) => charts.bars(el, { rows: top('credit') }) },
+                ].filter(v => true);
+                wireChart(`Balanza · ${from} → ${to}`, top('closing').length ? views : []);
             } catch (e) { notify.error(e.message); }
         }
         window.__runReport = run;

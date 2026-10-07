@@ -4,14 +4,12 @@
 @section('heading', 'Flujo de efectivo')
 
 @section('content')
-    <div class="page-head"><div><h1>Flujo de efectivo</h1><p>Movimiento de las cuentas de efectivo y bancos en el periodo.</p></div></div>
+    <div class="page-head">
+        <div><h1>Flujo de efectivo</h1><p>Movimiento de las cuentas de efectivo y bancos en el periodo.</p></div>
+        <button class="btn btn-ghost" id="chartBtn" disabled><i class="fa-solid fa-chart-column" aria-hidden="true"></i> Ver gráficas</button>
+    </div>
 
     @include('partials.period-filter')
-
-    <div class="card report-chart" id="cfChartCard" hidden>
-        <h2>Entradas y salidas por cuenta</h2>
-        <div id="cfChart"></div>
-    </div>
 
     <div class="card">
         <div class="table-wrap">
@@ -25,7 +23,12 @@
 
     @push('scripts')
     <script type="module">
-        const { http, notify, format, guard, loading, charts } = DF;
+        const { http, notify, format, guard, loading, charts, chartModal } = DF;
+        function wireChart(title, views) {
+            const btn = document.getElementById('chartBtn');
+            btn.disabled = !views.length;
+            btn.onclick = views.length ? () => chartModal.open({ title, views }) : null;
+        }
         async function run() {
             if (!await guard.ensureAuth()) return;
             const from = document.getElementById('from').value, to = document.getElementById('to').value;
@@ -33,11 +36,10 @@
             try {
                 const r = await http.get(`/reports/cash-flow?from=${from}&to=${to}`);
                 const body = document.getElementById('rows');
-                const chartCard = document.getElementById('cfChartCard');
                 if (!r.rows.length) {
                     body.innerHTML = '<tr><td colspan="6" class="empty">No hay cuentas de efectivo marcadas (is_cash).</td></tr>';
                     document.getElementById('foot').innerHTML = '';
-                    chartCard.hidden = true;
+                    wireChart('', []);
                     return;
                 }
                 body.innerHTML = r.rows.map(x => `
@@ -53,14 +55,15 @@
                         <td class="amount num">${format.money(r.totals.outflow)}</td>
                         <td class="amount num">${format.money(r.totals.closing)}</td></tr>`;
 
-                const rows = r.rows
-                    .map(x => ({ label: x.name, inflow: Number(x.inflow) || 0, outflow: Number(x.outflow) || 0 }))
+                const io = r.rows.map(x => ({ label: x.name, inflow: Number(x.inflow) || 0, outflow: Number(x.outflow) || 0 }))
                     .filter(x => x.inflow > 0 || x.outflow > 0);
-                chartCard.hidden = rows.length === 0;
-                if (rows.length) charts.stackedBars('#cfChart', {
-                    series: [{ key: 'inflow', name: 'Entradas' }, { key: 'outflow', name: 'Salidas' }],
-                    rows, stacked: false,
-                });
+                const closing = r.rows.map(x => ({ name: x.name, value: Math.abs(Number(x.closing) || 0) }))
+                    .filter(x => x.value > 0).sort((a, b) => b.value - a.value);
+                const views = [
+                    { label: 'Entradas y salidas', render: (el) => charts.stackedBars(el, { series: [{ key: 'inflow', name: 'Entradas' }, { key: 'outflow', name: 'Salidas' }], rows: io, stacked: false }) },
+                    { label: 'Saldo final por cuenta', render: (el) => charts.bars(el, { rows: closing }) },
+                ];
+                wireChart(`Flujo de efectivo · ${from} → ${to}`, io.length ? views : []);
             } catch (e) { notify.error(e.message); }
         }
         window.__runReport = run;

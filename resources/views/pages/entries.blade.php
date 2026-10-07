@@ -12,9 +12,10 @@
 
     <div class="page-head">
         <div><h1>Pólizas</h1><p>Asientos contables. Cada póliza debe cuadrar: cargos = abonos.</p></div>
-        <button class="btn btn-primary" id="newEntryBtn">
-            <i class="fa-solid fa-plus" aria-hidden="true"></i> Nuevo movimiento
-        </button>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-ghost" id="chartBtn" disabled><i class="fa-solid fa-chart-column" aria-hidden="true"></i> Ver gráficas</button>
+            <button class="btn btn-primary" id="newEntryBtn"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nuevo movimiento</button>
+        </div>
     </div>
 
     <div class="toolbar">
@@ -85,8 +86,30 @@
 
     @push('scripts')
     <script type="module">
-        const { http, notify, loading, modal, format, guard, select } = DF;
+        const { http, notify, loading, modal, format, guard, select, charts, chartModal } = DF;
         let metaId = null;
+
+        function wireChart(title, views) {
+            const btn = document.getElementById('chartBtn');
+            btn.disabled = !views.length;
+            btn.onclick = views.length ? () => chartModal.open({ title, views }) : null;
+        }
+
+        function buildChart(rows) {
+            const byAcct = {};
+            rows.forEach(e => (e.lines || []).forEach(l => {
+                const d = Number(l.debit) || 0;
+                if (d > 0) { const k = `${l.account_code} · ${l.account_name}`; byAcct[k] = (byAcct[k] || 0) + d; }
+            }));
+            const acctBars = Object.entries(byAcct).map(([name, value]) => ({ name, value }))
+                .sort((a, b) => b.value - a.value).slice(0, 10);
+            const polizaBars = rows.map(e => ({ name: `${format.date(e.entry_date)} · ${(e.description || '').slice(0, 18)}`, value: Number(e.totals?.debit || 0) }))
+                .filter(x => x.value > 0).slice(0, 12);
+            wireChart('Pólizas · página actual', acctBars.length ? [
+                { label: 'Importe por cuenta (cargo)', render: (el) => charts.bars(el, { rows: acctBars }) },
+                { label: 'Importe por póliza', render: (el) => charts.bars(el, { rows: polizaBars }) },
+            ] : []);
+        }
         let page = 1, lastPage = 1;
         let advFilters = { debit_account_id: '', credit_account_id: '' };
 
@@ -148,7 +171,8 @@
 
         function renderRows(rows) {
             const body = document.getElementById('rows');
-            if (!rows.length) { body.innerHTML = '<tr><td colspan="7" class="empty">Sin pólizas en este rango.</td></tr>'; return; }
+            if (!rows.length) { body.innerHTML = '<tr><td colspan="7" class="empty">Sin pólizas en este rango.</td></tr>'; wireChart('', []); return; }
+            buildChart(rows);
             const STATUS = { posted: 'Contabilizado', void: 'Cancelado', draft: 'Borrador' };
             body.innerHTML = rows.map(e => `
                 <tr>
