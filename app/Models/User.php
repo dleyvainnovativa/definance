@@ -29,6 +29,17 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * Identity is Firebase — there is no local `password` column. The session
+     * guard reads this when building the "remember me" recaller; returning an
+     * empty string lets Auth::login(remember: true) work without tripping
+     * strict-mode's MissingAttributeException on a column that doesn't exist.
+     */
+    public function getAuthPassword(): string
+    {
+        return '';
+    }
+
     // Domain relations (chart of accounts, journal entries, …) are added in
     // Phase 1 when those models exist.
 }
