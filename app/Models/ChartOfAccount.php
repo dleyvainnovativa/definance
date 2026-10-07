@@ -8,6 +8,7 @@ use App\Enums\NormalBalance;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ChartOfAccount extends Model
@@ -65,5 +66,10 @@ class ChartOfAccount extends Model
     public function lines(): HasMany
     {
         return $this->hasMany(JournalEntryLine::class, 'account_id');
+    }
+
+    public function etiquetas(): BelongsToMany
+    {
+        return $this->belongsToMany(Etiqueta::class, 'account_etiqueta', 'account_id', 'etiqueta_id');
     }
 }

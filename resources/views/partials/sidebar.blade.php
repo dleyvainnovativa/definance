@@ -19,8 +19,10 @@
             ['route' => 'budget-monthly', 'label' => 'Presupuesto mensual', 'icon' => 'calendar'],
             ['route' => 'iva', 'label' => 'Declaración de IVA', 'icon' => 'percent'],
             ['route' => 'averages', 'label' => 'Promedios', 'icon' => 'average'],
+            ['route' => 'label-report', 'label' => 'Reporte por etiqueta', 'icon' => 'tag'],
         ]],
         ['section' => 'Cuenta', 'items' => [
+            ['route' => 'labels', 'label' => 'Etiquetas', 'icon' => 'tag'],
             ['route' => 'profile', 'label' => 'Perfil', 'icon' => 'user'],
         ]],
     ];
@@ -41,6 +43,7 @@
         'percent' => '<line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
         'average' => '<line x1="4" y1="7" x2="15" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="10" y2="17"/>',
         'user' => '<circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>',
+        'tag' => '<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.2"/>',
     ];
 @endphp
 

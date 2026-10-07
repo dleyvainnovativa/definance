@@ -28,6 +28,8 @@ class UpdateAccountRequest extends FormRequest
             'parent_id' => ['nullable', new OwnedAccount(requirePostable: false)],
             'is_postable' => ['boolean'],
             'is_active' => ['boolean'],
+            'label_ids' => ['nullable', 'array'],
+            'label_ids.*' => [Rule::exists('etiquetas', 'id')->where('user_id', $this->user()->id)],
             // type is immutable once an account exists (it changes nature/meaning).
         ];
     }

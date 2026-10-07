@@ -76,13 +76,14 @@ export function setOptions(el, options, selectedValue = null) {
     if (!instance) instance = mount(sel);
     if (!instance) return null;
 
+    const selSet = Array.isArray(selectedValue) ? new Set(selectedValue.map(String)) : null;
     const list = (Array.isArray(options) ? options : optionsFromSelect(sel)).map((o) => ({
         value: String(o.value ?? ''),
         label: String(o.label ?? ''),
         disabled: !!o.disabled,
-        selected: selectedValue != null
-            ? String(o.value ?? '') === String(selectedValue)
-            : !!o.selected,
+        selected: selSet
+            ? selSet.has(String(o.value ?? ''))
+            : (selectedValue != null ? String(o.value ?? '') === String(selectedValue) : !!o.selected),
     }));
 
     instance.clearStore();
@@ -106,6 +107,12 @@ export function getValue(el) {
     return sel ? sel.value : null;
 }
 
+/** Selected values for a multi-select, as an array of strings. */
+export function getValues(el) {
+    const sel = node(el);
+    return sel ? Array.from(sel.selectedOptions).map((o) => o.value) : [];
+}
+
 /** Tear down the wrapper, restoring the plain <select>. */
 export function destroy(el) {
     const sel = node(el);
@@ -122,4 +129,4 @@ export function mountAll(selector, opts = {}) {
     document.querySelectorAll(selector).forEach((sel) => mount(sel, opts));
 }
 
-export const select = { mount, mountAll, setOptions, setValue, getValue, destroy };
+export const select = { mount, mountAll, setOptions, setValue, getValue, getValues, destroy };

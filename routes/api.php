@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DeviceController;
 use App\Http\Controllers\Api\JournalEntryController;
 use App\Http\Controllers\Api\JournalEntryImportController;
+use App\Http\Controllers\Api\LabelController;
 use App\Http\Controllers\Api\ManagedCashFlowController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ReportController;
@@ -44,6 +45,13 @@ Route::middleware('firebase.jwt')->group(function () {
 
     // Taxes (IVA).
     Route::get('/taxes', [TaxController::class, 'config'])->name('taxes.config');
+
+    // Etiquetas (labels) + label roll-up report.
+    Route::get('/reports/by-label', [LabelController::class, 'report'])->name('reports.by-label');
+    Route::get('/labels', [LabelController::class, 'index'])->name('labels.index');
+    Route::post('/labels', [LabelController::class, 'store'])->name('labels.store');
+    Route::put('/labels/{label}', [LabelController::class, 'update'])->name('labels.update');
+    Route::delete('/labels/{label}', [LabelController::class, 'destroy'])->name('labels.destroy');
 
     // Reports.
     Route::get('/reports/trial-balance', [ReportController::class, 'trialBalance'])->name('reports.trial-balance');

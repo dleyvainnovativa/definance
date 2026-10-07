@@ -294,6 +294,26 @@ class LedgerService
         ];
     }
 
+    /**
+     * Signed period movement per account (positive = normal side of the
+     * account's nature), keyed by account id. Used by cross-cutting roll-ups
+     * such as the label report.
+     *
+     * @return array<int,string>
+     */
+    public function accountMovements(int $userId, string $from, string $to): array
+    {
+        $period = $this->groupedSums($userId, $from, $to);
+
+        $out = [];
+        foreach ($this->accounts($userId) as $account) {
+            $sums = $period[$account->id] ?? ['d' => '0', 'c' => '0'];
+            $out[$account->id] = $this->signed($account->normal_balance, $sums['d'], $sums['c']);
+        }
+
+        return $out;
+    }
+
     // ----------------------------------------------------------------- helpers
 
     /** Whole calendar months spanned by [from, to], inclusive (min 1). */

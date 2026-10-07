@@ -249,6 +249,18 @@ table.ledger tbody[data-skeleton] tr:hover td { background: transparent; }
 /* page-head: title left, action buttons right (markup already assumes this) */
 .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
 
+/* etiquetas (labels) — chips + swatch */
+.tag-chip {
+    display: inline-flex; align-items: center; gap: .3rem;
+    font-size: .68rem; font-weight: 600; line-height: 1.5;
+    padding: .05rem .5rem; border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--chip, var(--c-primary)) 16%, transparent);
+    color: var(--chip, var(--c-primary));
+    border: 1px solid color-mix(in srgb, var(--chip, var(--c-primary)) 30%, transparent);
+    white-space: nowrap;
+}
+.swatch { width: 14px; height: 14px; border-radius: 4px; display: inline-block; border: 1px solid var(--c-border); flex: none; }
+
 /* ----------------------------------------- 8. fullscreen chart modal (Phase 24) */
 .chart-modal-switch { display: flex; align-items: center; gap: .5rem; margin-left: auto; margin-right: 1rem; }
 .chart-modal-switch .form-select { min-width: 220px; }

@@ -22,6 +22,7 @@ class AccountController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $accounts = ChartOfAccount::query()
+            ->with('etiquetas')
             ->when($request->filled('type'), fn ($q) => $q->where('type', (string) $request->input('type')))
             ->when($request->filled('postable'), fn ($q) => $q->where('is_postable', $request->boolean('postable')))
             ->when($request->filled('search'), function ($q) use ($request) {
@@ -73,24 +74,30 @@ class AccountController extends Controller
 
     public function store(StoreAccountRequest $request): JsonResponse
     {
-        $account = ChartOfAccount::create($request->validated());
+        $data = $request->validated();
+        $account = ChartOfAccount::create(collect($data)->except('label_ids')->all());
+        $account->etiquetas()->sync($data['label_ids'] ?? []);
 
-        return AccountResource::make($account)->response()->setStatusCode(201);
+        return AccountResource::make($account->load('etiquetas'))->response()->setStatusCode(201);
     }
 
     public function show(ChartOfAccount $account): AccountResource
     {
         $this->authorize('view', $account);
 
-        return AccountResource::make($account);
+        return AccountResource::make($account->load('etiquetas'));
     }
 
     public function update(UpdateAccountRequest $request, ChartOfAccount $account): AccountResource
     {
         $this->authorize('update', $account);
-        $account->update($request->validated());
+        $data = $request->validated();
+        $account->update(collect($data)->except('label_ids')->all());
+        if (array_key_exists('label_ids', $data)) {
+            $account->etiquetas()->sync($data['label_ids'] ?? []);
+        }
 
-        return AccountResource::make($account);
+        return AccountResource::make($account->load('etiquetas'));
     }
 
     public function destroy(ChartOfAccount $account): JsonResponse

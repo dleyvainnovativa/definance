@@ -9,10 +9,7 @@
             <h1>Catálogo de cuentas</h1>
             <p>Tu plan de cuentas. Sólo las cuentas de detalle reciben movimientos.</p>
         </div>
-        <button class="btn btn-primary" id="newAccountBtn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Nueva cuenta
-        </button>
+        <button class="btn btn-primary" id="newAccountBtn"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nueva cuenta</button>
     </div>
 
     <div class="toolbar">
@@ -70,6 +67,12 @@
                             <div class="col-6"><label class="form-label" for="parent_id">Cuenta padre</label>
                                 <select class="form-select" id="parent_id" name="parent_id"><option value="">— Ninguna —</option></select>
                             </div>
+                            <div class="col-12"><label class="form-label" for="labels">Etiquetas</label>
+                                <div class="d-flex gap-2 align-items-start">
+                                    <select class="form-select" id="labels" name="labels" multiple style="flex:1"></select>
+                                    <button type="button" class="btn btn-ghost" id="newLabelBtn" title="Crear etiqueta"><i class="fa-solid fa-plus" aria-hidden="true"></i></button>
+                                </div>
+                            </div>
                             <div class="col-12 d-flex gap-4">
                                 <label class="d-flex align-items-center gap-2"><input type="checkbox" id="is_postable" checked> Cuenta de detalle (recibe movimientos)</label>
                                 <label class="d-flex align-items-center gap-2"><input type="checkbox" id="is_active" checked> Activa</label>
@@ -90,14 +93,38 @@
         const { http, notify, loading, modal, guard, select } = DF;
         const TYPE_LABEL = { asset:'Activo', liability:'Pasivo', equity:'Capital', income:'Ingresos', expense:'Gastos' };
         let accounts = [];
+        let labels = [];
 
         async function load() {
             if (!await guard.ensureAuth()) return;
+            await loadLabels();
             await refresh();
             document.getElementById('search').addEventListener('input', render);
             document.getElementById('typeFilter').addEventListener('change', render);
-            // Auto-assign the next child code when a parent is chosen (create only).
             document.getElementById('parent_id').addEventListener('change', suggestCode);
+            document.getElementById('newLabelBtn').addEventListener('click', createLabel);
+        }
+
+        async function loadLabels() {
+            try { const r = await http.get('/labels'); labels = r.data; } catch (e) { labels = []; }
+        }
+        const labelOpts = () => labels.map(l => ({ value: l.id, label: l.name }));
+        function fillLabels(selectedIds = []) { select.setOptions('#labels', labelOpts(), selectedIds.map(String)); }
+
+        async function createLabel() {
+            const name = (window.prompt('Nombre de la etiqueta:') || '').trim();
+            if (!name) return;
+            try {
+                const r = await http.post('/labels', { name });
+                const created = r.data;
+                labels.push(created);
+                const current = select.getValues('#labels').concat(String(created.id));
+                fillLabels(current);
+                notify.success('Etiqueta creada.');
+            } catch (e) {
+                const msg = e.body?.errors ? Object.values(e.body.errors)[0][0] : e.message;
+                notify.error(msg);
+            }
         }
 
         async function refresh() {
@@ -126,6 +153,9 @@
             } catch (e) { /* leave the code field as-is */ }
         }
 
+        const chips = (a) => (a.labels || [])
+            .map(l => `<span class="tag-chip" style="--chip:${l.color || 'var(--c-primary)'}">${l.name}</span>`).join(' ');
+
         function render() {
             const q = document.getElementById('search').value.toLowerCase();
             const type = document.getElementById('typeFilter').value;
@@ -138,14 +168,14 @@
             body.innerHTML = list.map(a => `
                 <tr>
                     <td data-label="Código" class="num code">${a.code}</td>
-                    <td data-label="Nombre">${a.name}</td>
+                    <td data-label="Nombre">${a.name} ${chips(a)}</td>
                     <td data-label="Tipo">${TYPE_LABEL[a.type]}</td>
                     <td data-label="Naturaleza"><span class="badge-nature ${a.normal_balance}">${a.nature_label}</span></td>
                     <td data-label="Detalle">${a.is_postable ? 'Detalle' : 'Grupo'}</td>
                     <td class="amount">
                         <span class="row-actions">
-                            <button class="btn-icon" data-edit="${a.id}" title="Editar" ${a.is_editable ? '' : 'disabled'}>✎</button>
-                            <button class="btn-icon danger" data-del="${a.id}" title="Eliminar" ${a.is_deletable ? '' : 'disabled'}>🗑</button>
+                            <button class="btn-icon" data-edit="${a.id}" title="Editar" ${a.is_editable ? '' : 'disabled'}><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon danger" data-del="${a.id}" title="Eliminar" ${a.is_deletable ? '' : 'disabled'}><i class="fa-solid fa-trash"></i></button>
                         </span>
                     </td>
                 </tr>`).join('');
@@ -160,6 +190,7 @@
             document.getElementById('accountId').value = '';
             document.getElementById('type').disabled = false;
             select.setValue('#parent_id', '');
+            fillLabels([]);
             document.getElementById('is_postable').checked = true;
             document.getElementById('is_active').checked = true;
             modal.open('#accountModal');
@@ -175,6 +206,7 @@
             document.getElementById('type').value = a.type;
             document.getElementById('type').disabled = true; // immutable
             select.setValue('#parent_id', a.parent_id ?? '');
+            fillLabels((a.labels || []).map(l => l.id));
             document.getElementById('is_postable').checked = a.is_postable;
             document.getElementById('is_active').checked = a.is_active;
             modal.open('#accountModal');
@@ -205,6 +237,7 @@
                 parent_id: document.getElementById('parent_id').value || null,
                 is_postable: document.getElementById('is_postable').checked,
                 is_active: document.getElementById('is_active').checked,
+                label_ids: select.getValues('#labels'),
             };
             await loading.withLoading(btn, async () => {
                 try {

@@ -27,6 +27,9 @@ class AccountResource extends JsonResource
             'is_cash' => $this->is_cash,
             'is_editable' => $this->is_editable,
             'is_deletable' => $this->is_deletable,
+            'labels' => $this->whenLoaded('etiquetas', fn () => $this->etiquetas->map(fn ($e) => [
+                'id' => $e->id, 'name' => $e->name, 'color' => $e->color,
+            ])->values()),
             'children' => AccountResource::collection($this->whenLoaded('children')),
         ];
     }
