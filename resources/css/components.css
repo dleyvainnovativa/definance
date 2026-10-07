@@ -1,10 +1,19 @@
 /*
 |--------------------------------------------------------------------------
-| components.css — Phase 19 shared UI foundation (built on theme.css tokens)
+| components.css — shared UI foundation (built on theme.css tokens)
 |--------------------------------------------------------------------------
 | 1. choices.js theming (DF.select)        3. responsive .ledger--cards mode
 | 2. table skeleton shimmer (DF.loading)   4. chart legend (DF.charts)
+| 5. brand mark (Phase 20)
 */
+
+/* ----------------------------------------------------------- 5. brand mark */
+.sidebar .brand .brand-logo {
+    height: 26px;
+    width: auto;
+    display: block;
+    flex: none;
+}
 
 /* --------------------------------------------------- 1. choices.js (DF.select) */
 /* Make the choices.js control read exactly like our .form-select, in both themes. */

@@ -46,7 +46,7 @@
 
 <aside class="sidebar">
     <div class="brand">
-        <span class="mark">D</span> DeFinance
+        <img src="{{ asset('images/mark.png') }}" alt="" class="brand-logo"> DeFinance
     </div>
     <nav class="nav">
         @foreach ($nav as $group)
