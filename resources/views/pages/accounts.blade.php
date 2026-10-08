@@ -52,6 +52,7 @@
                     </div>
                     <div class="modal-body">
                         <input type="hidden" id="accountId">
+                        <p class="lock-note" id="lockNote" hidden><i class="fa-solid fa-lock" aria-hidden="true"></i> Cuenta estándar: los datos están protegidos, pero puedes asignarle etiquetas.</p>
                         <div class="row g-3">
                             <div class="col-4"><label class="form-label" for="code">Código</label><input class="form-control" id="code" name="code" required></div>
                             <div class="col-8"><label class="form-label" for="name">Nombre</label><input class="form-control" id="name" name="name" required></div>
@@ -174,7 +175,7 @@
                     <td data-label="Detalle">${a.is_postable ? 'Detalle' : 'Grupo'}</td>
                     <td class="amount">
                         <span class="row-actions">
-                            <button class="btn-icon" data-edit="${a.id}" title="Editar" ${a.is_editable ? '' : 'disabled'}><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon" data-edit="${a.id}" title="${a.is_editable ? 'Editar' : 'Editar etiquetas'}"><i class="fa-solid ${a.is_editable ? 'fa-pen' : 'fa-tag'}"></i></button>
                             <button class="btn-icon danger" data-del="${a.id}" title="Eliminar" ${a.is_deletable ? '' : 'disabled'}><i class="fa-solid fa-trash"></i></button>
                         </span>
                     </td>
@@ -184,10 +185,22 @@
             body.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => remove(b.dataset.del)));
         }
 
+        let editingLocked = false; // editing a structurally-locked standard account (labels-only)
+
+        // Lock/unlock the structural fields. Labels stay editable always.
+        function setStructuralLock(locked) {
+            ['code', 'name', 'is_postable', 'is_active'].forEach(id => { document.getElementById(id).disabled = locked; });
+            document.getElementById('type').disabled = locked;       // type is immutable on edit regardless
+            select.setDisabled('#parent_id', locked);
+            document.getElementById('lockNote').hidden = !locked;
+        }
+
         function openNew() {
             document.getElementById('accountModalTitle').textContent = 'Nueva cuenta';
             document.getElementById('accountForm').reset();
             document.getElementById('accountId').value = '';
+            editingLocked = false;
+            setStructuralLock(false);
             document.getElementById('type').disabled = false;
             select.setValue('#parent_id', '');
             fillLabels([]);
@@ -199,16 +212,20 @@
         function openEdit(id) {
             const a = accounts.find(x => x.id == id);
             if (!a) return;
-            document.getElementById('accountModalTitle').textContent = 'Editar cuenta';
+            editingLocked = !a.is_editable;
+            document.getElementById('accountModalTitle').textContent = editingLocked ? 'Editar etiquetas' : 'Editar cuenta';
             document.getElementById('accountId').value = a.id;
             document.getElementById('code').value = a.code;
             document.getElementById('name').value = a.name;
             document.getElementById('type').value = a.type;
-            document.getElementById('type').disabled = true; // immutable
             select.setValue('#parent_id', a.parent_id ?? '');
-            fillLabels((a.labels || []).map(l => l.id));
             document.getElementById('is_postable').checked = a.is_postable;
             document.getElementById('is_active').checked = a.is_active;
+            fillLabels((a.labels || []).map(l => l.id));
+            // Editable account: structural fields open (type still immutable).
+            // Locked standard account: everything locked except labels.
+            setStructuralLock(editingLocked);
+            if (!editingLocked) document.getElementById('type').disabled = true; // type immutable on edit
             modal.open('#accountModal');
         }
 
@@ -230,19 +247,25 @@
             e.preventDefault();
             const btn = e.currentTarget.querySelector('button[type="submit"]');
             const id = document.getElementById('accountId').value;
-            const payload = {
-                code: document.getElementById('code').value,
-                name: document.getElementById('name').value,
-                type: document.getElementById('type').value,
-                parent_id: document.getElementById('parent_id').value || null,
-                is_postable: document.getElementById('is_postable').checked,
-                is_active: document.getElementById('is_active').checked,
-                label_ids: select.getValues('#labels'),
-            };
+            const labelIds = select.getValues('#labels');
             await loading.withLoading(btn, async () => {
                 try {
-                    if (id) await http.put(`/accounts/${id}`, payload);
-                    else await http.post('/accounts', payload);
+                    if (id && editingLocked) {
+                        // Standard account: only the labels can change.
+                        await http.put(`/accounts/${id}/labels`, { label_ids: labelIds });
+                    } else {
+                        const payload = {
+                            code: document.getElementById('code').value,
+                            name: document.getElementById('name').value,
+                            type: document.getElementById('type').value,
+                            parent_id: document.getElementById('parent_id').value || null,
+                            is_postable: document.getElementById('is_postable').checked,
+                            is_active: document.getElementById('is_active').checked,
+                            label_ids: labelIds,
+                        };
+                        if (id) await http.put(`/accounts/${id}`, payload);
+                        else await http.post('/accounts', payload);
+                    }
                     modal.close('#accountModal');
                     notify.success('Cuenta guardada.');
                     await refresh();

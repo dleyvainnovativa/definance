@@ -46,6 +46,10 @@ class LedgerService
         $totalDebit = '0';
         $totalCredit = '0';
 
+        // Closing-balance snapshot grouped by account type, for the header cards
+        // (Activos / Pasivos / Capital / Ingresos / Egresos / Remanente).
+        $byType = ['asset' => '0', 'liability' => '0', 'equity' => '0', 'income' => '0', 'expense' => '0'];
+
         foreach ($this->accounts($userId) as $account) {
             $open = $opening[$account->id] ?? ['d' => '0', 'c' => '0'];
             $per = $period[$account->id] ?? ['d' => '0', 'c' => '0'];
@@ -58,6 +62,10 @@ class LedgerService
                 ? Money::sub($periodDebit, $periodCredit)
                 : Money::sub($periodCredit, $periodDebit);
             $closing = Money::add($openingBalance, $movement);
+
+            if (isset($byType[$account->type->value])) {
+                $byType[$account->type->value] = Money::add($byType[$account->type->value], $closing);
+            }
 
             if (Money::isZero($openingBalance) && Money::isZero($periodDebit) && Money::isZero($periodCredit)) {
                 continue;
@@ -84,6 +92,14 @@ class LedgerService
             'to' => $to,
             'rows' => $rows,
             'totals' => ['debit' => $totalDebit, 'credit' => $totalCredit],
+            'summary' => [
+                'assets' => $byType['asset'],
+                'liabilities' => $byType['liability'],
+                'equity' => $byType['equity'],
+                'income' => $byType['income'],
+                'expenses' => $byType['expense'],
+                'net' => Money::sub($byType['income'], $byType['expense']),
+            ],
         ];
     }
 
@@ -96,10 +112,18 @@ class LedgerService
     {
         $period = $this->groupedSums($userId, $from, $to);
 
+        // Accounts tagged with a reserved "financieros" label feed the two
+        // non-operating header cards. They stay inside operating revenue/expense
+        // too (informational highlight), so the bottom line is unchanged.
+        $finIncomeIds = $this->labeledAccountIds($userId, ['productos financieros', 'otros productos financieros', 'ingresos financieros']);
+        $finExpenseIds = $this->labeledAccountIds($userId, ['gastos financieros', 'otros gastos financieros']);
+
         $revenue = [];
         $expenses = [];
         $revenueTotal = '0';
         $expenseTotal = '0';
+        $financialIncome = '0';
+        $financialExpense = '0';
 
         foreach ($this->accounts($userId) as $account) {
             $sums = $period[$account->id] ?? ['d' => '0', 'c' => '0'];
@@ -108,9 +132,15 @@ class LedgerService
             if ($account->type->value === 'income' && ! Money::isZero($amount)) {
                 $revenue[] = $this->line($account, $amount);
                 $revenueTotal = Money::add($revenueTotal, $amount);
+                if (isset($finIncomeIds[$account->id])) {
+                    $financialIncome = Money::add($financialIncome, $amount);
+                }
             } elseif ($account->type->value === 'expense' && ! Money::isZero($amount)) {
                 $expenses[] = $this->line($account, $amount);
                 $expenseTotal = Money::add($expenseTotal, $amount);
+                if (isset($finExpenseIds[$account->id])) {
+                    $financialExpense = Money::add($financialExpense, $amount);
+                }
             }
         }
 
@@ -123,6 +153,9 @@ class LedgerService
                 'revenue' => $revenueTotal,
                 'expenses' => $expenseTotal,
                 'net_income' => Money::sub($revenueTotal, $expenseTotal),
+                'financial_income' => $financialIncome,
+                'financial_expense' => $financialExpense,
+                'resultado_del_ejercicio' => Money::sub($revenueTotal, $expenseTotal),
             ],
         ];
     }
@@ -141,6 +174,8 @@ class LedgerService
         $liabilities = [];
         $equity = [];
         $assetTotal = '0';
+        $assetCurrentTotal = '0';
+        $assetFixedTotal = '0';
         $liabilityTotal = '0';
         $equityTotal = '0';
         $incomeTotal = '0';
@@ -156,6 +191,13 @@ class LedgerService
                         $assets[] = $this->line($account, $amount);
                     }
                     $assetTotal = Money::add($assetTotal, $amount);
+                    // Fixed assets = code prefixed "110" (Activo fijo); everything
+                    // else under asset is current (circulante).
+                    if (self::isFixedAssetCode((string) $account->code)) {
+                        $assetFixedTotal = Money::add($assetFixedTotal, $amount);
+                    } else {
+                        $assetCurrentTotal = Money::add($assetCurrentTotal, $amount);
+                    }
                     break;
                 case 'liability':
                     if (! Money::isZero($amount)) {
@@ -190,6 +232,8 @@ class LedgerService
             'net_income' => $netIncome,
             'totals' => [
                 'assets' => $assetTotal,
+                'assets_current' => $assetCurrentTotal,
+                'assets_fixed' => $assetFixedTotal,
                 'liabilities' => $liabilityTotal,
                 'equity' => $equityTotal,
                 'equity_with_result' => $equityWithResult,
@@ -315,6 +359,51 @@ class LedgerService
     }
 
     // ----------------------------------------------------------------- helpers
+
+    /**
+     * Fixed-asset classifier for the balance-sheet header cards. Fixed =
+     * code "110" or a descendant ("110.x"); everything else under the asset
+     * type is current (circulante).
+     */
+    private static function isFixedAssetCode(string $code): bool
+    {
+        return $code === '110' || str_starts_with($code, '110.');
+    }
+
+    /**
+     * Account IDs tagged with any etiqueta whose (accent/case-normalized) name
+     * matches one of $names. Returned as a set keyed by account id for isset().
+     *
+     * @param  array<int,string>  $names
+     * @return array<int,true>
+     */
+    private function labeledAccountIds(int $userId, array $names): array
+    {
+        $wanted = array_map(fn ($n) => $this->normalizeLabel($n), $names);
+
+        $rows = DB::table('account_etiqueta as ae')
+            ->join('etiquetas as t', 't.id', '=', 'ae.etiqueta_id')
+            ->where('t.user_id', $userId)
+            ->get(['ae.account_id', 't.name']);
+
+        $ids = [];
+        foreach ($rows as $row) {
+            if (in_array($this->normalizeLabel((string) $row->name), $wanted, true)) {
+                $ids[(int) $row->account_id] = true;
+            }
+        }
+
+        return $ids;
+    }
+
+    /** lowercase, trim, strip Spanish accents, collapse inner whitespace. */
+    private function normalizeLabel(string $s): string
+    {
+        $s = mb_strtolower(trim($s));
+        $s = strtr($s, ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ñ' => 'n', 'ü' => 'u']);
+
+        return preg_replace('/\s+/', ' ', $s);
+    }
 
     /** Whole calendar months spanned by [from, to], inclusive (min 1). */
     private function monthsBetween(string $from, string $to): int

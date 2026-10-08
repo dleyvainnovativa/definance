@@ -11,6 +11,7 @@ use App\Rules\OwnedAccount;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Validation\Rule;
 
 /**
  * Chart of accounts CRUD. Every query is tenant-scoped automatically by the
@@ -96,6 +97,25 @@ class AccountController extends Controller
         if (array_key_exists('label_ids', $data)) {
             $account->etiquetas()->sync($data['label_ids'] ?? []);
         }
+
+        return AccountResource::make($account->load('etiquetas'));
+    }
+
+    /**
+     * Sync an account's labels only. Allowed on any owned account, including
+     * standard accounts locked for structural editing — labels are additive
+     * metadata, not a structural change.
+     */
+    public function updateLabels(Request $request, ChartOfAccount $account): AccountResource
+    {
+        $this->authorize('manageLabels', $account);
+
+        $data = $request->validate([
+            'label_ids' => ['nullable', 'array'],
+            'label_ids.*' => [Rule::exists('etiquetas', 'id')->where('user_id', $request->user()->id)],
+        ]);
+
+        $account->etiquetas()->sync($data['label_ids'] ?? []);
 
         return AccountResource::make($account->load('etiquetas'));
     }

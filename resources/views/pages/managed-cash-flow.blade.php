@@ -29,6 +29,8 @@
 
     <p class="carry-note" id="carryNote" hidden></p>
 
+    <div id="kpis"></div>
+
     <div class="card">
         <div class="table-wrap" id="grid">
             <div class="empty">Elige un mes y genera la proyección.</div>
@@ -37,8 +39,17 @@
 
     @push('scripts')
     <script type="module">
-        const { http, notify, loading, grid, format, guard } = DF;
+        const { http, notify, loading, grid, format, guard, kpis } = DF;
         let controller = null;
+
+        function renderKpis(t) {
+            const actualClosing = (Number(t.opening) || 0) + (Number(t.actual) || 0);
+            kpis.render('#kpis', [
+                { title: 'Saldo inicial', subtitle: 'Efectivo al inicio del mes', value: t.opening, tone: 'auto', icon: 'fa-wallet' },
+                { title: 'Movimiento del periodo', value: t.actual, projected: t.planned, icon: 'fa-arrow-trend-up' },
+                { title: 'Saldo final', value: actualClosing, projected: t.closing, icon: 'fa-money-bill-wave' },
+            ]);
+        }
 
         document.getElementById('period').value = new Date().toISOString().slice(0, 7);
 
@@ -67,8 +78,10 @@
                 el.innerHTML = '<div class="empty">No hay cuentas marcadas como efectivo (is_cash). Marca tus cuentas de caja/bancos en el catálogo.</div>';
                 document.getElementById('saveBtn').disabled = true;
                 document.getElementById('carryNote').hidden = true;
+                kpis.clear('#kpis');
                 return;
             }
+            renderKpis(r.totals);
             controller = grid.mount('#grid', {
                 columns: [
                     { key: 'code', label: 'Código', cls: 'code' },

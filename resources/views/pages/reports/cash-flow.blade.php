@@ -11,6 +11,8 @@
 
     @include('partials.period-filter')
 
+    <div id="kpis"></div>
+
     <div class="card">
         <div class="table-wrap">
             <table class="ledger ledger--cards">
@@ -23,7 +25,15 @@
 
     @push('scripts')
     <script type="module">
-        const { http, notify, format, guard, loading, charts, chartModal } = DF;
+        const { http, notify, format, guard, loading, charts, chartModal, kpis } = DF;
+        function renderKpis(t) {
+            kpis.render('#kpis', [
+                { title: 'Saldo inicial de efectivo', value: t.opening, icon: 'fa-wallet' },
+                { title: 'Saldo al final del periodo', value: t.closing, icon: 'fa-money-bill-wave' },
+                { title: 'Saldo en B. de Comp', value: t.closing, icon: 'fa-scale-balanced' },
+                { title: 'Variación del periodo', value: t.net_change, icon: 'fa-arrow-trend-up' },
+            ]);
+        }
         function wireChart(title, views) {
             const btn = document.getElementById('chartBtn');
             btn.disabled = !views.length;
@@ -35,6 +45,7 @@
             loading.skeleton('#rows', { rows: 4 });
             try {
                 const r = await http.get(`/reports/cash-flow?from=${from}&to=${to}`);
+                if (r.totals) renderKpis(r.totals);
                 const body = document.getElementById('rows');
                 if (!r.rows.length) {
                     body.innerHTML = '<tr><td colspan="6" class="empty">No hay cuentas de efectivo marcadas (is_cash).</td></tr>';

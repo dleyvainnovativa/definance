@@ -27,6 +27,16 @@ class ChartOfAccountPolicy
         return $account->user_id === $user->id && $account->is_editable;
     }
 
+    /**
+     * Labels (etiquetas) are additive metadata, not structural edits, so they
+     * can be managed on ANY owned account — including standard accounts locked
+     * for structural editing (is_editable = false).
+     */
+    public function manageLabels(User $user, ChartOfAccount $account): bool
+    {
+        return $account->user_id === $user->id;
+    }
+
     public function delete(User $user, ChartOfAccount $account): bool
     {
         return $account->user_id === $user->id && $account->is_deletable;

@@ -14,6 +14,8 @@
 
     @include('partials.period-filter', ['target' => 'asof'])
 
+    <div id="kpis"></div>
+
     <div class="report-cols">
         <div class="card">
             <h2 class="statement-title">Activos</h2>
@@ -27,7 +29,17 @@
 
     @push('scripts')
     <script type="module">
-        const { http, notify, format, guard, loading, charts, chartModal } = DF;
+        const { http, notify, format, guard, loading, charts, chartModal, kpis } = DF;
+        function renderKpis(t) {
+            kpis.render('#kpis', [
+                { title: 'Activos', subtitle: 'Total de Activos', value: t.assets_current ?? t.assets, icon: 'fa-coins' },
+                { title: 'Activos Fijos', subtitle: 'Total de Activos Fijos', value: t.assets_fixed ?? 0, icon: 'fa-building' },
+                { title: 'Total Activos', subtitle: 'Activos + Activos Fijos', value: t.assets, icon: 'fa-landmark' },
+                { title: 'Pasivos', subtitle: 'Total de Pasivos', value: t.liabilities, icon: 'fa-file-invoice-dollar' },
+                { title: 'Patrimonio', subtitle: 'Total de Patrimonio', value: t.equity_with_result, icon: 'fa-hand-holding-dollar' },
+                { title: 'Total Pasivo + Capital', subtitle: 'Pasivo + Capital', value: t.liabilities_plus_equity, icon: 'fa-scale-balanced' },
+            ]);
+        }
         function wireChart(title, views) {
             const btn = document.getElementById('chartBtn');
             btn.disabled = !views.length;
@@ -40,6 +52,7 @@
             loading.skeleton('#liabeq', { rows: 5, cols: 2 });
             try {
                 const r = await http.get(`/reports/balance-sheet?as_of=${asOf}`);
+                if (r.totals) renderKpis(r.totals);
                 const line = (x) => `<tr><td><span class="code">${x.code}</span> · ${x.name}</td><td class="amount num">${format.money(x.amount)}</td></tr>`;
 
                 document.getElementById('assets').innerHTML =

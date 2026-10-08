@@ -265,6 +265,44 @@ table.ledger tbody[data-skeleton] tr:hover td { background: transparent; }
 .acct-flow { display: inline-flex; align-items: center; gap: .4rem; white-space: nowrap; }
 .acct-flow i { opacity: .5; font-size: .72em; }
 
+/* ----------------------------------------- KPI header cards (report summaries) */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.4rem;
+}
+.kpi-card {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius);
+    padding: 1.05rem 1.2rem;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+}
+.kpi-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
+.kpi-title { font-weight: 600; font-size: .96rem; color: var(--c-text); line-height: 1.2; }
+.kpi-head i { color: var(--c-text-subtle); font-size: 1rem; opacity: .7; flex: none; margin-top: .1rem; }
+.kpi-sub { color: var(--c-text-muted); font-size: .8rem; margin-top: .15rem; }
+.kpi-value { margin-top: .5rem; font-size: 1.6rem; font-weight: 700; color: var(--c-text); line-height: 1.1; }
+.kpi-value.pos { color: var(--c-pos); }
+.kpi-value.neg { color: var(--c-neg); }
+.kpi-dual { display: flex; gap: 1.4rem; flex-wrap: wrap; margin-top: .3rem; }
+.kpi-dcol { min-width: 110px; }
+.kpi-dual .kpi-value { font-size: 1.25rem; margin-top: .15rem; }
+.kpi-dlabel { font-size: .72rem; color: var(--c-text-subtle); }
+
+/* standard-account lock hint in the account modal */
+.lock-note {
+    display: flex; align-items: center; gap: .5rem;
+    font-size: .82rem; color: var(--c-text-muted);
+    background: var(--c-surface-2, rgba(127,127,127,.06));
+    border: 1px solid var(--c-border); border-radius: var(--radius);
+    padding: .5rem .7rem; margin: 0 0 1rem;
+}
+.lock-note i { opacity: .7; }
+
 /* ----------------------------------------- 8. fullscreen chart modal (Phase 24) */
 .chart-modal-switch { display: flex; align-items: center; gap: .5rem; margin-left: auto; margin-right: 1rem; }
 .chart-modal-switch .form-select { min-width: 220px; }

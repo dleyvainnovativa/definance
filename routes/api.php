@@ -23,6 +23,8 @@ Route::middleware('firebase.jwt')->group(function () {
     // Chart of accounts CRUD. Static helper route before the resource so it
     // isn't captured by /accounts/{account}.
     Route::get('/accounts/next-code', [AccountController::class, 'nextCode'])->name('accounts.next-code');
+    // Labels-only update — allowed even on structurally-locked standard accounts.
+    Route::put('/accounts/{account}/labels', [AccountController::class, 'updateLabels'])->name('accounts.labels.update');
     Route::apiResource('accounts', AccountController::class);
 
     // Journal entries.

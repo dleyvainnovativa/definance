@@ -29,10 +29,11 @@ import { grid } from './lib/grid.js';
 import { charts } from './lib/charts.js';
 import { chartModal } from './lib/chartModal.js';
 import { select } from './lib/select.js';
+import { kpis } from './lib/kpis.js';
 import * as firebase from './firebase/firebase.js';
 
 window.DF = {
-    http, HttpError, notify, loading, modal, forms, auth, format, guard, grid, charts, chartModal, select, firebase,
+    http, HttpError, notify, loading, modal, forms, auth, format, guard, grid, charts, chartModal, select, kpis, firebase,
     theme: { setTheme, toggleTheme },
     bootstrap,
 };

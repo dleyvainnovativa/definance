@@ -113,6 +113,15 @@ export function getValues(el) {
     return sel ? Array.from(sel.selectedOptions).map((o) => o.value) : [];
 }
 
+/** Enable/disable a (possibly choices.js-wrapped) select. */
+export function setDisabled(el, disabled) {
+    const sel = node(el);
+    if (!sel) return;
+    const instance = INSTANCES.get(sel);
+    if (instance) { disabled ? instance.disable() : instance.enable(); }
+    else { sel.disabled = !!disabled; }
+}
+
 /** Tear down the wrapper, restoring the plain <select>. */
 export function destroy(el) {
     const sel = node(el);
@@ -129,4 +138,4 @@ export function mountAll(selector, opts = {}) {
     document.querySelectorAll(selector).forEach((sel) => mount(sel, opts));
 }
 
-export const select = { mount, mountAll, setOptions, setValue, getValue, getValues, destroy };
+export const select = { mount, mountAll, setOptions, setValue, getValue, getValues, setDisabled, destroy };

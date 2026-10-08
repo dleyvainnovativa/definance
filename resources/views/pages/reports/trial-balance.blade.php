@@ -11,6 +11,8 @@
 
     @include('partials.period-filter')
 
+    <div id="kpis"></div>
+
     <div class="card">
         <div class="table-wrap">
             <table class="ledger ledger--cards">
@@ -23,7 +25,17 @@
 
     @push('scripts')
     <script type="module">
-        const { http, notify, format, guard, loading, charts, chartModal } = DF;
+        const { http, notify, format, guard, loading, charts, chartModal, kpis } = DF;
+        function renderKpis(s) {
+            kpis.render('#kpis', [
+                { title: 'Activos', value: s.assets, icon: 'fa-coins' },
+                { title: 'Pasivos', value: s.liabilities, icon: 'fa-file-invoice-dollar' },
+                { title: 'Capital', value: s.equity, icon: 'fa-hand-holding-dollar' },
+                { title: 'Ingresos', value: s.income, icon: 'fa-arrow-trend-up' },
+                { title: 'Egresos', value: s.expenses, icon: 'fa-arrow-trend-down' },
+                { title: 'Remanente o Utilidad', value: s.net, icon: 'fa-scale-balanced' },
+            ]);
+        }
         function wireChart(title, views) {
             const btn = document.getElementById('chartBtn');
             btn.disabled = !views.length;
@@ -35,6 +47,7 @@
             loading.skeleton('#rows', { rows: 6 });
             try {
                 const r = await http.get(`/reports/trial-balance?from=${from}&to=${to}`);
+                if (r.summary) renderKpis(r.summary);
                 const body = document.getElementById('rows');
                 if (!r.rows.length) {
                     body.innerHTML = '<tr><td colspan="6" class="empty">Sin movimientos en el periodo.</td></tr>';
