@@ -32,9 +32,9 @@
 
     <div class="card">
         <div class="table-wrap">
-            <table class="ledger ledger--cards">
+            <table class="ledger ledger--cards" id="accTable">
                 <thead>
-                    <tr><th>Código</th><th>Nombre</th><th>Tipo</th><th>Naturaleza</th><th>Detalle</th><th class="amount">Acciones</th></tr>
+                    <tr><th>Código</th><th>Nombre</th><th>Tipo</th><th>Naturaleza</th><th>Detalle</th><th class="amount" data-no-sort>Acciones</th></tr>
                 </thead>
                 <tbody id="rows"><tr><td colspan="6" class="empty">Cargando…</td></tr></tbody>
             </table>
@@ -91,7 +91,7 @@
 
     @push('scripts')
     <script type="module">
-        const { http, notify, loading, modal, guard, select } = DF;
+        const { http, notify, loading, modal, guard, select, tableTools } = DF;
         const TYPE_LABEL = { asset:'Activo', liability:'Pasivo', equity:'Capital', income:'Ingresos', expense:'Gastos' };
         let accounts = [];
         let labels = [];
@@ -165,7 +165,12 @@
                 (!q || a.code.toLowerCase().includes(q) || a.name.toLowerCase().includes(q)));
 
             const body = document.getElementById('rows');
-            if (!list.length) { body.innerHTML = '<tr><td colspan="6" class="empty">Sin cuentas que coincidan.</td></tr>'; return; }
+            if (!list.length) {
+                body.innerHTML = '<tr><td colspan="6" class="empty">Sin cuentas que coincidan.</td></tr>';
+                const pg = document.getElementById('accTable').nextElementSibling;
+                if (pg && pg.classList.contains('dt-pager')) pg.innerHTML = '';
+                return;
+            }
             body.innerHTML = list.map(a => `
                 <tr>
                     <td data-label="Código" class="num code">${a.code}</td>
@@ -183,6 +188,7 @@
 
             body.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEdit(b.dataset.edit)));
             body.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => remove(b.dataset.del)));
+            tableTools.enhance('#accTable', { pageSize: 15 });
         }
 
         let editingLocked = false; // editing a structurally-locked standard account (labels-only)

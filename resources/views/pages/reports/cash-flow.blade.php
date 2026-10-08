@@ -15,7 +15,7 @@
 
     <div class="card">
         <div class="table-wrap">
-            <table class="ledger ledger--cards">
+            <table class="ledger ledger--cards" id="cfTable">
                 <thead><tr><th>Código</th><th>Cuenta</th><th class="amount">Inicial</th><th class="amount">Entradas</th><th class="amount">Salidas</th><th class="amount">Final</th></tr></thead>
                 <tbody id="rows"><tr><td colspan="6" class="empty">Genera el reporte para ver el flujo.</td></tr></tbody>
                 <tfoot id="foot"></tfoot>
@@ -25,7 +25,12 @@
 
     @push('scripts')
     <script type="module">
-        const { http, notify, format, guard, loading, charts, chartModal, kpis } = DF;
+        const { http, notify, format, guard, loading, charts, chartModal, kpis, tableTools } = DF;
+        function paginate(hasRows) {
+            const tbl = document.getElementById('cfTable');
+            if (hasRows) tableTools.enhance(tbl, { pageSize: 10 });
+            else { const pg = tbl.nextElementSibling; if (pg && pg.classList.contains('dt-pager')) pg.innerHTML = ''; }
+        }
         function renderKpis(t) {
             kpis.render('#kpis', [
                 { title: 'Saldo inicial de efectivo', value: t.opening, icon: 'fa-wallet' },
@@ -50,6 +55,7 @@
                 if (!r.rows.length) {
                     body.innerHTML = '<tr><td colspan="6" class="empty">No hay cuentas de efectivo marcadas (is_cash).</td></tr>';
                     document.getElementById('foot').innerHTML = '';
+                    paginate(false);
                     wireChart('', []);
                     return;
                 }
@@ -65,6 +71,7 @@
                         <td class="amount num">${format.money(r.totals.inflow)}</td>
                         <td class="amount num">${format.money(r.totals.outflow)}</td>
                         <td class="amount num">${format.money(r.totals.closing)}</td></tr>`;
+                paginate(true);
 
                 const io = r.rows.map(x => ({ label: x.name, inflow: Number(x.inflow) || 0, outflow: Number(x.outflow) || 0 }))
                     .filter(x => x.inflow > 0 || x.outflow > 0);

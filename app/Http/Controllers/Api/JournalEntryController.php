@@ -44,11 +44,37 @@ class JournalEntryController extends Controller
                 'lines',
                 fn ($q) => $q->where('account_id', $request->integer('credit_account_id'))->whereNotNull('credit')
             ))
-            ->orderByDesc('entry_date')
-            ->orderByDesc('id')
+            ->tap(fn ($q) => $this->applySort($q, $request))
             ->paginate($request->integer('per_page', 25));
 
         return JournalEntryResource::collection($entries);
+    }
+
+    /**
+     * Apply a whitelisted sort for the Pólizas table. Default: newest first.
+     * `amount` sorts by the entry's total debit (its importe).
+     */
+    private function applySort(\Illuminate\Database\Eloquent\Builder $q, Request $request): void
+    {
+        $sort = (string) $request->input('sort', 'date');
+        $dir = $request->input('dir') === 'asc' ? 'asc' : 'desc';
+
+        $columns = [
+            'date' => 'entry_date',
+            'description' => 'description',
+            'reference' => 'reference',
+            'status' => 'status',
+        ];
+
+        if ($sort === 'amount') {
+            $q->withSum('lines as amount_sum', 'debit')->orderBy('amount_sum', $dir);
+        } elseif (isset($columns[$sort])) {
+            $q->orderBy($columns[$sort], $dir);
+        } else {
+            $q->orderByDesc('entry_date');
+        }
+
+        $q->orderByDesc('id'); // stable tiebreaker
     }
 
     public function store(StoreJournalEntryRequest $request): JsonResponse

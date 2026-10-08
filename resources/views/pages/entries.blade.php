@@ -53,13 +53,13 @@
         <table class="ledger ledger--cards">
             <thead>
                 <tr>
-                    <th>Fecha</th>
-                    <th>Descripción</th>
-                    <th>Cuentas</th>
-                    <th>Referencia</th>
-                    <th>Estado</th>
-                    <th class="amount">Importe</th>
-                    <th class="amount">Acciones</th>
+                    <th class="sortable" data-sort-key="date">Fecha <span class="dt-caret"></span></th>
+                    <th class="sortable" data-sort-key="description">Descripción <span class="dt-caret"></span></th>
+                    <th data-no-sort>Cuentas</th>
+                    <th class="sortable" data-sort-key="reference">Referencia <span class="dt-caret"></span></th>
+                    <th class="sortable" data-sort-key="status">Estado <span class="dt-caret"></span></th>
+                    <th class="amount sortable" data-sort-key="amount">Importe <span class="dt-caret"></span></th>
+                    <th class="amount" data-no-sort>Acciones</th>
                 </tr>
             </thead>
             <tbody id="rows">
@@ -69,7 +69,7 @@
             </tbody>
         </table>
     </div>
-    <div class="pager"><span id="pagerInfo"></span><span class="btns"><button class="btn btn-ghost" id="prevBtn">Anterior</button><button class="btn btn-ghost" id="nextBtn">Siguiente</button></span></div>
+    <div id="pager"></div>
 </div>
 
 {{-- Advanced filters offcanvas --}}
@@ -128,9 +128,36 @@
         guard,
         select,
         charts,
-        chartModal
+        chartModal,
+        tableTools
     } = DF;
     let metaId = null;
+    let perPage = 15,
+        sortKey = 'date',
+        sortDir = 'desc';
+
+    function updateSortCarets() {
+        document.querySelectorAll('.ledger thead th.sortable').forEach(th => {
+            const active = th.dataset.sortKey === sortKey;
+            th.classList.toggle('asc', active && sortDir === 'asc');
+            th.classList.toggle('desc', active && sortDir === 'desc');
+        });
+    }
+
+    function wireSortHeaders() {
+        document.querySelectorAll('.ledger thead th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const key = th.dataset.sortKey;
+                if (key === sortKey) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+                else {
+                    sortKey = key;
+                    sortDir = key === 'date' || key === 'amount' ? 'desc' : 'asc';
+                }
+                page = 1;
+                loadEntries();
+            });
+        });
+    }
 
     function wireChart(title, views) {
         const btn = document.getElementById('chartBtn');
@@ -262,18 +289,7 @@
             page = 1;
             loadEntries();
         });
-        document.getElementById('prevBtn').addEventListener('click', () => {
-            if (page > 1) {
-                page--;
-                loadEntries();
-            }
-        });
-        document.getElementById('nextBtn').addEventListener('click', () => {
-            if (page < lastPage) {
-                page++;
-                loadEntries();
-            }
-        });
+        wireSortHeaders();
         document.getElementById('newEntryBtn').addEventListener('click', () => window.DFEntry?.open());
         document.getElementById('advApply').addEventListener('click', () => {
             advFilters.debit_account_id = document.getElementById('fDebit').value;
@@ -306,8 +322,10 @@
     async function loadEntries() {
         window.__pfCompute?.();
         const p = new URLSearchParams({
-            per_page: '15',
-            page
+            per_page: String(perPage),
+            page,
+            sort: sortKey,
+            dir: sortDir
         });
         ['from', 'to', 'status', 'search'].forEach(id => {
             const v = document.getElementById(id).value;
@@ -318,11 +336,30 @@
         loading.skeleton('#rows', {
             rows: 6
         });
+        updateSortCarets();
         try {
             const res = await http.get('/entries?' + p.toString());
             lastPage = res.meta.last_page;
+            page = res.meta.current_page;
             renderRows(res.data);
-            document.getElementById('pagerInfo').textContent = `Página ${res.meta.current_page} de ${res.meta.last_page} · ${res.meta.total} pólizas`;
+            tableTools.pager('#pager', {
+                page: res.meta.current_page,
+                pages: res.meta.last_page,
+                total: res.meta.total,
+                from: res.meta.from || 0,
+                to: res.meta.to || 0,
+                pageSize: perPage,
+                pageSizes: [15, 25, 50, 100],
+                onPage: (pg) => {
+                    page = pg;
+                    loadEntries();
+                },
+                onPageSize: (n) => {
+                    perPage = n;
+                    page = 1;
+                    loadEntries();
+                },
+            });
         } catch (e) {
             notify.error(e.message);
         }

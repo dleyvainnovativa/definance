@@ -23,7 +23,12 @@ export const format = {
     },
     date(iso) {
         if (!iso) return '';
-        return dateFmt.format(new Date(iso));
+        // Date-only strings ("YYYY-MM-DD") parse as UTC midnight, which renders a
+        // day earlier in negative-offset zones (e.g. 2026-09-01 → "31 ago" in
+        // America/Mexico_City). Build them as LOCAL dates so the day is exact.
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso));
+        const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(iso);
+        return dateFmt.format(d);
     },
     /** CSS class for a signed amount */
     signClass(value) {

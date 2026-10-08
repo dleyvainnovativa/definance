@@ -15,7 +15,7 @@
 
     <div class="card">
         <div class="table-wrap">
-            <table class="ledger ledger--cards">
+            <table class="ledger ledger--cards" id="tbTable">
                 <thead><tr><th>Código</th><th>Cuenta</th><th class="amount">Inicial</th><th class="amount">Cargos</th><th class="amount">Abonos</th><th class="amount">Final</th></tr></thead>
                 <tbody id="rows"><tr><td colspan="6" class="empty">Elige un periodo y genera el reporte.</td></tr></tbody>
                 <tfoot id="foot"></tfoot>
@@ -25,7 +25,12 @@
 
     @push('scripts')
     <script type="module">
-        const { http, notify, format, guard, loading, charts, chartModal, kpis } = DF;
+        const { http, notify, format, guard, loading, charts, chartModal, kpis, tableTools } = DF;
+        function paginate(hasRows) {
+            const tbl = document.getElementById('tbTable');
+            if (hasRows) tableTools.enhance(tbl, { pageSize: 10 });
+            else { const pg = tbl.nextElementSibling; if (pg && pg.classList.contains('dt-pager')) pg.innerHTML = ''; }
+        }
         function renderKpis(s) {
             kpis.render('#kpis', [
                 { title: 'Activos', value: s.assets, icon: 'fa-coins' },
@@ -52,6 +57,7 @@
                 if (!r.rows.length) {
                     body.innerHTML = '<tr><td colspan="6" class="empty">Sin movimientos en el periodo.</td></tr>';
                     document.getElementById('foot').innerHTML = '';
+                    paginate(false);
                     wireChart('', []);
                     return;
                 }
@@ -66,6 +72,7 @@
                         <td class="amount num">${format.money(r.totals.debit)}</td>
                         <td class="amount num">${format.money(r.totals.credit)}</td>
                         <td class="amount num">${r.totals.debit === r.totals.credit ? '✓' : '≠'}</td></tr>`;
+                paginate(true);
 
                 const top = (key) => r.rows
                     .map(x => ({ name: `${x.code} · ${x.name}`, value: Math.abs(Number(x[key]) || 0) }))
