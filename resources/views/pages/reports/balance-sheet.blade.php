@@ -40,7 +40,7 @@
             loading.skeleton('#liabeq', { rows: 5, cols: 2 });
             try {
                 const r = await http.get(`/reports/balance-sheet?as_of=${asOf}`);
-                const line = (x) => `<tr><td>${x.name}</td><td class="amount num">${format.money(x.amount)}</td></tr>`;
+                const line = (x) => `<tr><td><span class="code">${x.code}</span> · ${x.name}</td><td class="amount num">${format.money(x.amount)}</td></tr>`;
 
                 document.getElementById('assets').innerHTML =
                     r.assets.map(line).join('') +

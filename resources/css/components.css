@@ -261,6 +261,10 @@ table.ledger tbody[data-skeleton] tr:hover td { background: transparent; }
 }
 .swatch { width: 14px; height: 14px; border-radius: 4px; display: inline-block; border: 1px solid var(--c-border); flex: none; }
 
+/* account flow cell (debit → credit codes) in movement tables */
+.acct-flow { display: inline-flex; align-items: center; gap: .4rem; white-space: nowrap; }
+.acct-flow i { opacity: .5; font-size: .72em; }
+
 /* ----------------------------------------- 8. fullscreen chart modal (Phase 24) */
 .chart-modal-switch { display: flex; align-items: center; gap: .5rem; margin-left: auto; margin-right: 1rem; }
 .chart-modal-switch .form-select { min-width: 220px; }

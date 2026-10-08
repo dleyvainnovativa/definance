@@ -31,7 +31,7 @@
             loading.skeleton('#statement', { rows: 5, cols: 2 });
             try {
                 const r = await http.get(`/reports/income-statement?from=${from}&to=${to}`);
-                const line = (x) => `<tr><td>${x.name}</td><td class="amount num">${format.money(x.amount)}</td></tr>`;
+                const line = (x) => `<tr><td><span class="code">${x.code}</span> · ${x.name}</td><td class="amount num">${format.money(x.amount)}</td></tr>`;
                 let html = '';
                 html += `<tr class="subtotal"><td>Ingresos</td><td class="amount num">${format.money(r.totals.revenue)}</td></tr>`;
                 html += r.revenue.map(line).join('');

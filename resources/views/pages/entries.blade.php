@@ -6,8 +6,6 @@
 @section('content')
     <style>
         .offcanvas { background: var(--c-surface); color: var(--c-text); }
-        .acct-flow { display: inline-flex; align-items: center; gap: .4rem; white-space: nowrap; }
-        .acct-flow i { opacity: .5; font-size: .72em; }
     </style>
 
     <div class="page-head">
@@ -19,8 +17,18 @@
     </div>
 
     <div class="toolbar">
-        <div class="field"><label for="from">Desde</label><input class="form-control" id="from" type="date"></div>
-        <div class="field"><label for="to">Hasta</label><input class="form-control" id="to" type="date"></div>
+        <div class="field">
+            <label>Periodo</label>
+            <div class="pf-tabs" role="tablist">
+                <button type="button" class="pf-tab active" data-mode="month">Mes</button>
+                <button type="button" class="pf-tab" data-mode="range">Rango</button>
+            </div>
+        </div>
+        <div class="field pf-f-month"><label for="pfMonth">Mes</label><select class="form-select" id="pfMonth"></select></div>
+        <div class="field pf-f-year"><label for="pfYear">Año</label><select class="form-select" id="pfYear"></select></div>
+        <div class="field pf-f-from" hidden><label for="pfFrom">Desde</label><input class="form-control" type="date" id="pfFrom"></div>
+        <div class="field pf-f-to" hidden><label for="pfTo">Hasta</label><input class="form-control" type="date" id="pfTo"></div>
+        <input type="hidden" id="from"><input type="hidden" id="to">
         <div class="field"><label for="status">Estado</label>
             <select class="form-select" id="status"><option value="">Todos</option><option value="posted">Contabilizado</option><option value="draft">Borrador</option><option value="void">Cancelado</option></select>
         </div>
@@ -113,8 +121,62 @@
         let page = 1, lastPage = 1;
         let advFilters = { debit_account_id: '', credit_account_id: '' };
 
+        // Period filter — month/year default (current month), toggle to custom range.
+        // Drives hidden #from/#to that loadEntries reads. Exposes window.__pfCompute().
+        function setupPeriod() {
+            const now = new Date();
+            const Y = now.getFullYear(), M = now.getMonth() + 1;
+            const names = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const monthSel = document.getElementById('pfMonth');
+            const yearSel = document.getElementById('pfYear');
+            const pad = (n) => String(n).padStart(2, '0');
+            const lastDay = (y, m) => new Date(y, m, 0).getDate(); // m: 1-12
+
+            monthSel.innerHTML = names.map((n, i) => `<option value="${i + 1}">${n}</option>`).join('') +
+                '<option value="0">Todo el año</option>';
+            monthSel.value = String(M);
+            const years = [];
+            for (let y = Y + 1; y >= Y - 6; y--) years.push(y);
+            yearSel.innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join('');
+            yearSel.value = String(Y);
+
+            const pfFrom = document.getElementById('pfFrom');
+            const pfTo = document.getElementById('pfTo');
+            pfFrom.value = `${Y}-${pad(M)}-01`;
+            pfTo.value = now.toISOString().slice(0, 10);
+
+            const hFrom = document.getElementById('from');
+            const hTo = document.getElementById('to');
+            let mode = 'month';
+
+            function compute() {
+                if (mode === 'month') {
+                    const m = Number(monthSel.value), y = Number(yearSel.value);
+                    if (m === 0) { hFrom.value = `${y}-01-01`; hTo.value = `${y}-12-31`; }
+                    else { hFrom.value = `${y}-${pad(m)}-01`; hTo.value = `${y}-${pad(m)}-${pad(lastDay(y, m))}`; }
+                } else {
+                    hFrom.value = pfFrom.value; hTo.value = pfTo.value;
+                }
+            }
+            function setMode(m) {
+                mode = m;
+                document.querySelectorAll('.toolbar .pf-tab').forEach((t) => t.classList.toggle('active', t.dataset.mode === m));
+                const month = m === 'month';
+                document.querySelector('.pf-f-month').hidden = !month;
+                document.querySelector('.pf-f-year').hidden = !month;
+                document.querySelector('.pf-f-from').hidden = month;
+                document.querySelector('.pf-f-to').hidden = month;
+            }
+            document.querySelectorAll('.toolbar .pf-tab').forEach((t) => t.addEventListener('click', () => setMode(t.dataset.mode)));
+            window.__pfCompute = compute;
+            setMode('month');
+            compute();
+        }
+
         async function init() {
             if (!await guard.ensureAuth()) return;
+            setupPeriod();
             try {
                 const acc = await http.get('/accounts?postable=1');
                 const opts = '<option value="">Cualquiera</option>' + acc.data.map(a => `<option value="${a.id}">${a.code} · ${a.name}</option>`).join('');
@@ -144,6 +206,7 @@
         }
 
         async function loadEntries() {
+            window.__pfCompute?.();
             const p = new URLSearchParams({ per_page: '15', page });
             ['from', 'to', 'status', 'search'].forEach(id => { const v = document.getElementById(id).value; if (v) p.set(id, v); });
             if (advFilters.debit_account_id) p.set('debit_account_id', advFilters.debit_account_id);

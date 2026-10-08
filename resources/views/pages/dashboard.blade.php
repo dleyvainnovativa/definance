@@ -65,12 +65,13 @@
                     <tr>
                         <th>Fecha</th>
                         <th>Descripción</th>
+                        <th>Cuentas</th>
                         <th>Referencia</th>
                         <th class="amount">Importe</th>
                     </tr>
                 </thead>
                 <tbody id="recentRows">
-                    <tr><td colspan="4" style="color:var(--c-text-muted);padding:1.2rem .9rem;">Cargando…</td></tr>
+                    <tr><td colspan="5" style="color:var(--c-text-muted);padding:1.2rem .9rem;">Cargando…</td></tr>
                 </tbody>
             </table>
         </div>
@@ -125,16 +126,30 @@
             }
         }
 
+        function accountsCell(e) {
+            const lines = e.lines || [];
+            const debits = lines.filter(l => Number(l.debit) > 0);
+            const credits = lines.filter(l => Number(l.credit) > 0);
+            if (lines.length === 2 && debits.length === 1 && credits.length === 1) {
+                const title = `Cargo: ${debits[0].account_code} ${debits[0].account_name} · Abono: ${credits[0].account_code} ${credits[0].account_name}`;
+                return `<span class="acct-flow" title="${title}"><span class="code">${debits[0].account_code}</span><i class="fa-solid fa-arrow-right-long"></i><span class="code">${credits[0].account_code}</span></span>`;
+            }
+            if (!lines.length) return '';
+            const title = lines.map(l => `${l.account_code} ${Number(l.debit) > 0 ? '(cargo)' : '(abono)'}`).join(' · ');
+            return `<span class="code" title="${title}">${lines.length} cuentas</span>`;
+        }
+
         function renderRecent(rows) {
             const body = document.getElementById('recentRows');
             if (!rows || rows.length === 0) {
-                body.innerHTML = '<tr><td colspan="4" style="color:var(--c-text-muted);padding:1.2rem .9rem;">Aún no hay pólizas registradas.</td></tr>';
+                body.innerHTML = '<tr><td colspan="5" style="color:var(--c-text-muted);padding:1.2rem .9rem;">Aún no hay pólizas registradas.</td></tr>';
                 return;
             }
             body.innerHTML = rows.map((e) => `
                 <tr>
                     <td class="num code">${format.date(e.entry_date)}</td>
                     <td>${e.description ?? ''}</td>
+                    <td>${accountsCell(e)}</td>
                     <td class="code">${e.reference ?? ''}</td>
                     <td class="amount num">${format.money(e.totals?.debit ?? 0)}</td>
                 </tr>`).join('');
