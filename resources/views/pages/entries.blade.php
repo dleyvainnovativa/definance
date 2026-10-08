@@ -9,6 +9,12 @@
         background: var(--c-surface);
         color: var(--c-text);
     }
+    /* Cuentas cell: código + nombre, wraps on small screens. */
+    .acct-flow { flex-wrap: wrap; row-gap: .15rem; }
+    .acct-flow .acct { display: inline-flex; gap: .3rem; align-items: baseline; }
+    .acct-flow .acct .nm { color: var(--c-text-muted); }
+    td[data-label="Cuentas"] .acct-flow { max-width: 460px; }
+    tfoot tr.total td { font-weight: 600; border-top: 2px solid var(--c-border); }
 </style>
 
 <div class="page-head">
@@ -67,6 +73,13 @@
                     <td colspan="7" class="empty">Cargando…</td>
                 </tr>
             </tbody>
+            <tfoot id="totals" hidden>
+                <tr class="total">
+                    <td colspan="5" data-label="">Total del periodo · <span id="totalsCount">0</span> pólizas</td>
+                    <td class="amount num" data-label="Total importe" id="totalsImporte">—</td>
+                    <td class="amount" data-label=""></td>
+                </tr>
+            </tfoot>
         </table>
     </div>
     <div id="pager"></div>
@@ -266,6 +279,9 @@
             document.querySelector('.pf-f-to').hidden = month;
         }
         document.querySelectorAll('.toolbar .pf-tab').forEach((t) => t.addEventListener('click', () => setMode(t.dataset.mode)));
+        // Auto-trigger: changing month / year / range reloads immediately
+        // (the "Filtrar" button stays as a fallback).
+        [monthSel, yearSel, pfFrom, pfTo].forEach((el) => el.addEventListener('change', () => { page = 1; loadEntries(); }));
         window.__pfCompute = compute;
         setMode('month');
         compute();
@@ -288,6 +304,13 @@
         document.getElementById('applyBtn').addEventListener('click', () => {
             page = 1;
             loadEntries();
+        });
+        // Auto-trigger on status change and (debounced) search typing.
+        document.getElementById('status').addEventListener('change', () => { page = 1; loadEntries(); });
+        let searchTimer;
+        document.getElementById('search').addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => { page = 1; loadEntries(); }, 300);
         });
         wireSortHeaders();
         document.getElementById('newEntryBtn').addEventListener('click', () => window.DFEntry?.open());
@@ -342,6 +365,7 @@
             lastPage = res.meta.last_page;
             page = res.meta.current_page;
             renderRows(res.data);
+            renderTotals(res.totals, res.meta.total);
             tableTools.pager('#pager', {
                 page: res.meta.current_page,
                 pages: res.meta.last_page,
@@ -365,16 +389,29 @@
         }
     }
 
+    function escapeHtml(s) {
+        return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    const acctLabel = (l) => `<span class="acct"><span class="code">${escapeHtml(l.account_code)}</span> <span class="nm">${escapeHtml(l.account_name)}</span></span>`;
+
     function accountsCell(e) {
         const lines = e.lines || [];
         const debits = lines.filter(l => Number(l.debit) > 0);
         const credits = lines.filter(l => Number(l.credit) > 0);
         if (lines.length === 2 && debits.length === 1 && credits.length === 1) {
             const title = `Cargo: ${debits[0].account_code} ${debits[0].account_name} · Abono: ${credits[0].account_code} ${credits[0].account_name}`;
-            return `<span class="acct-flow" title="${title}"><span class="code">${debits[0].account_code}</span><i class="fa-solid fa-arrow-right-long"></i><span class="code">${credits[0].account_code}</span></span>`;
+            return `<span class="acct-flow" title="${escapeHtml(title)}">${acctLabel(debits[0])}<i class="fa-solid fa-arrow-right-long"></i>${acctLabel(credits[0])}</span>`;
         }
-        const title = lines.map(l => `${l.account_code} ${Number(l.debit) > 0 ? '(cargo)' : '(abono)'}`).join(' · ');
-        return `<span class="code" title="${title}">${lines.length} cuentas</span>`;
+        const title = lines.map(l => `${l.account_code} ${l.account_name} ${Number(l.debit) > 0 ? '(cargo)' : '(abono)'}`).join(' · ');
+        return `<span class="code" title="${escapeHtml(title)}">${lines.length} cuentas</span>`;
+    }
+
+    function renderTotals(totals, count) {
+        const foot = document.getElementById('totals');
+        if (!totals || !count) { foot.hidden = true; return; }
+        document.getElementById('totalsCount').textContent = count;
+        document.getElementById('totalsImporte').textContent = format.money(totals.debit ?? 0);
+        foot.hidden = false;
     }
 
     function renderRows(rows) {

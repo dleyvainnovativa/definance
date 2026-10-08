@@ -9,6 +9,8 @@ use App\Http\Requests\UpdatePostedEntryRequest;
 use App\Http\Resources\JournalEntryResource;
 use App\Models\JournalEntry;
 use App\Services\Ledger\PostingService;
+use App\Support\Money;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -23,7 +25,30 @@ class JournalEntryController extends Controller
     {
         $entries = JournalEntry::query()
             ->with('lines.account')
-            ->when($request->filled('from'), fn ($q) => $q->whereDate('entry_date', '>=', $request->date('from')))
+            ->tap(fn ($q) => $this->applyFilters($q, $request))
+            ->tap(fn ($q) => $this->applySort($q, $request))
+            ->paginate($request->integer('per_page', 25));
+
+        // Period totals across ALL filtered entries (not just the current page),
+        // so the table footer shows the true period importe.
+        $sums = JournalEntry::query()
+            ->tap(fn ($q) => $this->applyFilters($q, $request))
+            ->join('journal_entry_lines as tl', 'tl.journal_entry_id', '=', 'journal_entries.id')
+            ->selectRaw('COALESCE(SUM(tl.debit),0) as d, COALESCE(SUM(tl.credit),0) as c')
+            ->first();
+
+        return JournalEntryResource::collection($entries)->additional([
+            'totals' => [
+                'debit' => Money::of($sums->d ?? 0),
+                'credit' => Money::of($sums->c ?? 0),
+            ],
+        ]);
+    }
+
+    /** Shared filter chain for the list and its period totals. */
+    private function applyFilters(Builder $q, Request $request): void
+    {
+        $q->when($request->filled('from'), fn ($q) => $q->whereDate('entry_date', '>=', $request->date('from')))
             ->when($request->filled('to'), fn ($q) => $q->whereDate('entry_date', '<=', $request->date('to')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', (string) $request->input('status')))
             ->when($request->filled('search'), function ($q) use ($request) {
@@ -43,11 +68,7 @@ class JournalEntryController extends Controller
             ->when($request->filled('credit_account_id'), fn ($q) => $q->whereHas(
                 'lines',
                 fn ($q) => $q->where('account_id', $request->integer('credit_account_id'))->whereNotNull('credit')
-            ))
-            ->tap(fn ($q) => $this->applySort($q, $request))
-            ->paginate($request->integer('per_page', 25));
-
-        return JournalEntryResource::collection($entries);
+            ));
     }
 
     /**

@@ -91,6 +91,9 @@
 
         document.querySelectorAll('.pf-tab').forEach((t) => t.addEventListener('click', () => setMode(t.dataset.mode)));
         document.getElementById('genBtn').addEventListener('click', () => { compute(); window.__runReport?.(); });
+        // Auto-trigger: changing month / year / range runs the report immediately
+        // (the "Generar" button stays as a fallback).
+        [monthSel, yearSel, pfFrom, pfTo].forEach((el) => el.addEventListener('change', () => { compute(); window.__runReport?.(); }));
 
         // Seed current-month values now, before the page's own run() (which runs
         // after this script) reads the hidden inputs.
