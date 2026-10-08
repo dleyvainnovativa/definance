@@ -103,8 +103,29 @@ class CashCountService
         }
 
         $countedById = [];
+        $denomsById = [];
         foreach ($counts as $c) {
-            $countedById[(int) $c['account_id']] = Money::of($c['counted']);
+            $aid = (int) $c['account_id'];
+            $denoms = $c['denominations'] ?? null;
+
+            if (! empty($denoms)) {
+                // Recompute the counted total from the MXN denomination grid
+                // (value × qty) server-side — the grid is the source of truth.
+                $sum = '0';
+                $clean = [];
+                foreach ($denoms as $d) {
+                    $qty = (int) $d['qty'];
+                    if ($qty <= 0) {
+                        continue;
+                    }
+                    $sum = Money::add($sum, bcmul((string) $d['value'], (string) $qty, Money::SCALE));
+                    $clean[] = ['value' => Money::of($d['value']), 'qty' => $qty];
+                }
+                $countedById[$aid] = Money::of($sum);
+                $denomsById[$aid] = $clean;
+            } else {
+                $countedById[$aid] = Money::of($c['counted']);
+            }
         }
 
         $accounts = $this->countedAccounts($userId, $setting->counted_account_ids);
@@ -128,6 +149,7 @@ class CashCountService
             $breakdown[] = [
                 'account_id' => $a->id, 'code' => $a->code, 'name' => $a->name,
                 'book' => $book, 'counted' => $counted, 'difference' => $diff,
+                'denominations' => $denomsById[$a->id] ?? null,
             ];
 
             if (Money::isPositive($diff)) {

@@ -47,6 +47,9 @@ export function mount(el, cfg) {
             return `<input class="form-control grid-input num" type="number" step="0.01" inputmode="decimal"
                         data-key="${col.key}" data-i="${i}" value="${v === null || v === undefined || v === '' ? '' : Number(v)}">`;
         }
+        if (col.type === 'action') {
+            return `<button type="button" class="btn btn-ghost btn-sm grid-action" data-i="${i}">${escapeHtml(col.actionLabel || 'Acción')}</button>`;
+        }
         if (col.type === 'money') return moneyCell(row[col.key]);
         return escapeHtml(row[col.key]);
     }
@@ -70,6 +73,9 @@ export function mount(el, cfg) {
         container.innerHTML = `<table class="ledger grid-table">${head}${body}${totalsHtml()}</table>`;
         container.querySelectorAll('input.grid-input').forEach((inp) => {
             inp.addEventListener('input', onEdit);
+        });
+        container.querySelectorAll('button.grid-action').forEach((b) => {
+            b.addEventListener('click', () => cfg.onAction?.(rows[Number(b.dataset.i)], Number(b.dataset.i)));
         });
     }
 
@@ -102,9 +108,24 @@ export function mount(el, cfg) {
 
     render();
 
+    // Programmatically set a cell (e.g. a computed "Contado" from a sub-dialog),
+    // updating its input, recomputing the row, and refreshing computed cells.
+    function setValue(i, key, value) {
+        if (!rows[i]) return;
+        rows[i][key] = value === '' || value === null || value === undefined ? null : value;
+        rows[i] = recompute(rows[i]);
+        const tr = container.querySelector(`tr[data-row="${i}"]`);
+        const inp = tr?.querySelector(`input.grid-input[data-key="${key}"]`);
+        if (inp) inp.value = rows[i][key] === null ? '' : Number(rows[i][key]);
+        refreshComputedCells(i);
+        refreshTotals();
+        cfg.onChange?.(rows[i], rows);
+    }
+
     return {
         rows: () => rows.map((r) => ({ ...r })),
         setRows: (r) => { rows = (r || []).map((x) => recompute({ ...x })); render(); },
+        setValue,
         render,
     };
 }
