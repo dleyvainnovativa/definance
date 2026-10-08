@@ -20,6 +20,11 @@
             } catch (e) {}
         })();
     </script>
+    {{-- Critical paint: themed background before the bundle loads (no flash). --}}
+    <style>
+        html { background: #f7f7f7; color: #17202e; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+        html[data-theme="dark"] { background: #0e1620; color: #e8eef5; }
+    </style>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         /* ---- Login split-screen — theme-aware (tokens), brand panel fixed gradient ---- */

@@ -21,7 +21,6 @@
     --brand-magenta: #a84882;
 
     /* LIGHT (default) */
-    /* --c-bg: var(--brand-cream); */
     --c-bg: #f7f7f7;
     --c-surface: #ffffff;
     --c-surface-2: #f3f7fc;
@@ -193,6 +192,7 @@ a { color: var(--c-primary); text-decoration: none; }
     transition: background-color .12s ease, color .12s ease;
 }
 .nav-link svg { width: 17px; height: 17px; flex: none; opacity: .85; }
+.nav-link i { width: 18px; font-size: 15px; text-align: center; flex: none; opacity: .85; }
 .nav-link:hover { background: var(--c-surface-2); color: var(--c-text); }
 .nav-link.active {
     background: var(--c-primary-soft);
@@ -209,7 +209,6 @@ a { color: var(--c-primary); text-decoration: none; }
     height: var(--topbar-h);
     display: flex; align-items: center; justify-content: space-between;
     padding: 0 1.5rem;
-    /* background: color-mix(in srgb, var(--c-bg) 80%, transparent); */
     background-color: var(--c-surface);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--c-border);
