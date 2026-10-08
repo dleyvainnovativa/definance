@@ -19,6 +19,10 @@
 /* Make the choices.js control read exactly like our .form-select, in both themes. */
 .choices { margin-bottom: 0; }
 .choices:focus-within { outline: none; }
+/* Multi-selects (e.g. Etiquetas) share a flex row with a button — fill it
+   instead of collapsing to content width (which wraps chips char-by-char). */
+.choices[data-type*="select-multiple"] { flex: 1 1 auto; min-width: 0; }
+.choices__list--multiple .choices__item { white-space: normal; word-break: normal; }
 
 .choices__inner {
     background: var(--c-surface);

@@ -145,6 +145,7 @@
         tableTools
     } = DF;
     let metaId = null;
+    let preAccountId = ''; // deep-link filter (e.g. from the label report)
     let perPage = 15,
         sortKey = 'date',
         sortDir = 'desc';
@@ -290,6 +291,15 @@
     async function init() {
         if (!await guard.ensureAuth()) return;
         setupPeriod();
+        // Deep-link: /entries?account_id=&from=&to= (e.g. from the label report).
+        const url = new URLSearchParams(location.search);
+        const qAcct = url.get('account_id'), qFrom = url.get('from'), qTo = url.get('to');
+        if (qFrom && qTo) {
+            document.querySelector('.toolbar .pf-tab[data-mode="range"]')?.click();
+            document.getElementById('pfFrom').value = qFrom;
+            document.getElementById('pfTo').value = qTo;
+        }
+        if (qAcct) preAccountId = qAcct;
         try {
             const acc = await http.get('/accounts?postable=1');
             const opts = '<option value="">Cualquiera</option>' + acc.data.map(a => `<option value="${a.id}">${a.code} · ${a.name}</option>`).join('');
@@ -327,6 +337,7 @@
                 debit_account_id: '',
                 credit_account_id: ''
             };
+            preAccountId = ''; // also clear any label-report deep-link filter
             page = 1;
             loadEntries();
         });
@@ -356,6 +367,7 @@
         });
         if (advFilters.debit_account_id) p.set('debit_account_id', advFilters.debit_account_id);
         if (advFilters.credit_account_id) p.set('credit_account_id', advFilters.credit_account_id);
+        if (preAccountId) p.set('account_id', preAccountId);
         loading.skeleton('#rows', {
             rows: 6
         });

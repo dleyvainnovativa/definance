@@ -44,6 +44,15 @@ class AuthController extends Controller
         Auth::login($user, remember: true);
         $request->session()->regenerate();
 
+        // Seed the default chart of accounts on first sign-in (never block login).
+        if ($isNewUser) {
+            try {
+                \Database\Seeders\ChartOfAccountsSeeder::seedForUser($user->id);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
         LoginDevice::create([
             'user_id' => $user->id,
             'ip_address' => $request->ip(),

@@ -25,8 +25,10 @@ class PlanActualService
         $out = [];
         foreach ($keys as $key) {
             $actual = Money::of($actualsById[$key] ?? 0);
-            // Absolute planned values (decision R3): an untouched line mirrors the actual.
-            $planned = array_key_exists($key, $plannedById) && $plannedById[$key] !== null
+            // Absolute planned values (decision R3): an untouched line mirrors the
+            // actual. Only numeric planned values are money — null, or a non-numeric
+            // value (e.g. the FEA note carried in the same map), falls back to actual.
+            $planned = array_key_exists($key, $plannedById) && is_numeric($plannedById[$key])
                 ? Money::of($plannedById[$key])
                 : $actual;
 
