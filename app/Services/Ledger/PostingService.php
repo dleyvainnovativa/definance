@@ -10,6 +10,7 @@ use App\Models\JournalEntry;
 use App\Support\Money;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * The single, authoritative way to write to the ledger.
@@ -42,6 +43,7 @@ class PostingService
         $legs = $this->normalizeLegs($legs);
         $this->assertBalanced($legs);
         $this->assertAccounts($userId, $legs);
+        $this->assertDateOpen($userId, $entryDate);
 
         return DB::transaction(function () use ($userId, $entryDate, $legs, $description, $reference, $status) {
             $entry = JournalEntry::create([
@@ -117,6 +119,7 @@ class PostingService
         $legs = $this->normalizeLegs($legs);
         $this->assertBalanced($legs);
         $this->assertAccounts($entry->user_id, $legs);
+        $this->assertDateOpen($entry->user_id, $entryDate);
 
         return DB::transaction(function () use ($entry, $entryDate, $legs, $description, $reference) {
             $entry->lines()->delete();
@@ -152,6 +155,11 @@ class PostingService
         if ($entry->status !== EntryStatus::Posted) {
             throw PostingException::notPostedForMeta();
         }
+
+        // Block moving INTO a closed period, and editing an entry that already
+        // sits in one (it would disturb a closed year).
+        $this->assertDateOpen($entry->user_id, $entryDate);
+        $this->assertDateOpen($entry->user_id, Carbon::parse($entry->entry_date)->toDateString());
 
         $entry->update([
             'entry_date' => $entryDate,
@@ -229,6 +237,28 @@ class PostingService
             if (! $account->is_postable || ! $account->is_active) {
                 throw PostingException::accountNotPostable($account->code);
             }
+        }
+    }
+
+    /**
+     * Reject any entry dated on or before the user's latest closed year-end
+     * (Cierre de ejercicio). Closing/reversing entries pass because the close
+     * row is written after posting and removed before reopening.
+     */
+    private function assertDateOpen(int $userId, string $entryDate): void
+    {
+        if (! Schema::hasTable('period_closes')) {
+            return;
+        }
+
+        $closedYear = (int) DB::table('period_closes')->where('user_id', $userId)->max('year');
+        if ($closedYear === 0) {
+            return;
+        }
+
+        $date = Carbon::parse($entryDate)->toDateString();
+        if ($date <= "{$closedYear}-12-31") {
+            throw PostingException::closedPeriod($date, $closedYear);
         }
     }
 }

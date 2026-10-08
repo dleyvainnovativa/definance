@@ -8,6 +8,7 @@
             ['route' => 'entries', 'label' => 'Pólizas', 'icon' => 'book'],
             ['route' => 'import', 'label' => 'Importar pólizas', 'icon' => 'upload'],
             ['route' => 'cash-count', 'label' => 'Arqueo de caja', 'icon' => 'wallet'],
+            ['route' => 'closing', 'label' => 'Cierre de ejercicio', 'icon' => 'lock'],
         ]],
         ['section' => 'Reportes', 'items' => [
             ['route' => 'trial-balance', 'label' => 'Balanza de comprobación', 'icon' => 'scale'],
@@ -33,6 +34,7 @@
         'book' => 'fa-book',
         'upload' => 'fa-file-import',
         'wallet' => 'fa-wallet',
+        'lock' => 'fa-lock',
         'scale' => 'fa-scale-balanced',
         'trend' => 'fa-chart-line',
         'layers' => 'fa-layer-group',

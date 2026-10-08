@@ -110,7 +110,11 @@ class LedgerService
      */
     public function incomeStatement(int $userId, string $from, string $to): array
     {
-        $period = $this->groupedSums($userId, $from, $to);
+        // Exclude year-end closing entries (reference "cierre:YYYY"): they are a
+        // bookkeeping mechanism dated Dec-31, not P&L activity. Keeping them would
+        // zero a closed year's statement and distort the dashboard/budget trends.
+        // The balance sheet DOES include them (so results fold into equity).
+        $period = $this->groupedSums($userId, $from, $to, excludeClosing: true);
 
         // Accounts tagged with a reserved "financieros" label feed the two
         // non-operating header cards. They stay inside operating revenue/expense
@@ -446,9 +450,9 @@ class LedgerService
      *
      * @return array<int,array{d:string,c:string}>
      */
-    private function groupedSums(int $userId, ?string $from, ?string $to): array
+    private function groupedSums(int $userId, ?string $from, ?string $to, bool $excludeClosing = false): array
     {
-        $rows = $this->sumQuery($userId)
+        $rows = $this->sumQuery($userId, $excludeClosing)
             ->when($from, fn ($q) => $q->whereDate('e.entry_date', '>=', $from))
             ->when($to, fn ($q) => $q->whereDate('e.entry_date', '<=', $to))
             ->groupBy('l.account_id')
@@ -468,11 +472,16 @@ class LedgerService
      * a voided entry and its reversing entry net to zero, so counting both
      * keeps balances correct and the audit trail intact.
      */
-    private function sumQuery(int $userId): \Illuminate\Database\Query\Builder
+    private function sumQuery(int $userId, bool $excludeClosing = false): \Illuminate\Database\Query\Builder
     {
         return DB::table('journal_entry_lines as l')
             ->join('journal_entries as e', 'e.id', '=', 'l.journal_entry_id')
             ->where('l.user_id', $userId)
-            ->whereIn('e.status', ['posted', 'void']);
+            ->whereIn('e.status', ['posted', 'void'])
+            // P&L reports exclude year-end closing entries (reference "cierre:YYYY").
+            ->when($excludeClosing, fn ($q) => $q->where(fn ($w) => $w
+                ->whereNull('e.reference')
+                ->orWhere('e.reference', 'not like', 'cierre:%')
+            ));
     }
 }

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\CashCountController;
+use App\Http\Controllers\Api\ClosingController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DeviceController;
 use App\Http\Controllers\Api\JournalEntryController;
@@ -72,6 +73,13 @@ Route::middleware('firebase.jwt')->group(function () {
     Route::post('/budgets/monthly', [BudgetController::class, 'storeMonthly'])->name('budgets.monthly.store');
     Route::get('/budgets', [BudgetController::class, 'index'])->name('budgets.index');
     Route::post('/budgets', [BudgetController::class, 'store'])->name('budgets.store');
+
+    // Cierre de ejercicio (year-end close).
+    Route::get('/closes/settings', [ClosingController::class, 'settings'])->name('closes.settings');
+    Route::put('/closes/settings', [ClosingController::class, 'saveSettings'])->name('closes.settings.save');
+    Route::get('/closes', [ClosingController::class, 'index'])->name('closes.index');
+    Route::post('/closes', [ClosingController::class, 'store'])->name('closes.store');
+    Route::delete('/closes/{year}', [ClosingController::class, 'destroy'])->whereNumber('year')->name('closes.destroy');
 
     // Profile.
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');

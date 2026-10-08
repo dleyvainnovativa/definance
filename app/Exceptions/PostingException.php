@@ -41,4 +41,9 @@ class PostingException extends RuntimeException
     {
         return new self('Only a posted entry can have its date, description or reference edited.');
     }
+
+    public static function closedPeriod(string $date, int $year): self
+    {
+        return new self("El ejercicio {$year} está cerrado. No se pueden registrar ni editar pólizas con fecha {$date} (al 31-dic-{$year} o antes). Reabre el ejercicio para modificarlo.");
+    }
 }

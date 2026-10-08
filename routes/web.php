@@ -16,6 +16,7 @@ Route::middleware('auth')->group(function () {
     Route::view('/entries', 'pages.entries')->name('entries');
     Route::view('/import', 'pages.import')->name('import');
     Route::view('/cash-count', 'pages.cash-count')->name('cash-count');
+    Route::view('/closing', 'pages.closing')->name('closing');
 
     Route::view('/trial-balance', 'pages.reports.trial-balance')->name('trial-balance');
     Route::view('/income-statement', 'pages.reports.income-statement')->name('income-statement');
